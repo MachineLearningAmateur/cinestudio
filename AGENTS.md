@@ -608,6 +608,18 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
       PICTURE directions (read from the rig: hips x velocity; world +X = the picture's right for a camera looking along
       +Y), limbs by the character's own side, with the picture side where it helps (user: "model's direction is
       important to call out, not just events"). Name the facing and the main moves, not every flick.
+    - **Name the moves whose DEPTH a front view cannot show (user rule, 2026-10-26).** The layout is a flat picture:
+      overlapping limbs and moves toward or away from the camera are ambiguous, and LTX can read them as a body turn
+      (the turn-away) or as legs that swap sides (mirrored motion). Call them out in that clip's actions: limbs that
+      CROSS (which limb, in front of or behind the other, toward which picture side: "steps the left foot across in
+      front of the right foot toward the left of the picture, then steps back out"), a knee, foot or hand that moves
+      toward or away from the camera ("the knee lifts toward the camera"), a step or lean forward or back, a hand that
+      goes behind the body or the head. Read the depth from the rig, not from the render: the template's timeline.json
+      has every frame's head, hips, hands and feet; for a camera looking along +Y a smaller y is NEARER the camera, and
+      crossed feet = foot.L x < foot.R x while the body faces the camera (`shot timeline` has no cross event).
+      Example: shan_shen_bu_balls crosses the feet at frames 95-102 (the clip 1/2 join), 129-136 (clip 2, 26 cm) and
+      213-223 (the clip 2/3 join: the left foot in front, toward the picture's left); no clip text named them. Keep
+      about three beats: drop a less important beat (a prop story) for it. Not A/B-tested yet.
     - **No cause or threat stories for objects the layout already moves.** Bad: "Three times a dodgeball flies straight
       at the head; each time the dancer slides sideways at the last moment ...". Good: "The masked dancer slides toward
       the right of the picture, stops hard, slides back toward the left, stops, slides right again, then flicks the
