@@ -277,8 +277,8 @@ def shared_engine() -> bool:
     if not eng.get("share_families"):
         return False
     try:
-        import psutil
-        return psutil.virtual_memory().total >= float(eng.get("min_ram_gb", 96)) * 1024 ** 3
+        from . import sysinfo      # the container's limit, not the host's RAM (a pod sees the host's /proc/meminfo)
+        return (sysinfo.total_ram() or 0) >= float(eng.get("min_ram_gb", 96)) * 1024 ** 3
     except Exception:  # noqa: BLE001
         return False
 

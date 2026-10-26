@@ -805,9 +805,13 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
 - Tokens: `hf` (gated LTX files), `comfy` (Comfy Cloud, optional), `civitai` (optional): `settings token set NAME`.
   The app HIDES the Comfy Cloud key and the Run on choice (user, 2026-10-25; web/js/settings.js `SHOW_COMFY_CLOUD`):
   Cloud's support of the 4 LTXVideo pack nodes and the gated IC-LoRAs is unverified (docs/comfy_cloud_compat.md).
-- RunPod: docs/RUNPOD.md (`bash setup/install_linux.sh --tier T` on a stock PyTorch pod with a network volume; not yet
-  tested on a pod; the repo has no remote: push it or `runpodctl send` a tarball without .venv and .cinestudio). The
+- RunPod: docs/RUNPOD.md (`bash setup/install_linux.sh --tier T` inside tmux on a stock PyTorch CUDA 13.0 pod with a
+  network volume; not yet tested on a pod: its section 6 lists the first-session checks). The code reaches the pod by
+  `git clone` of the private GitHub repo (MachineLearningAmateur/cinestudio, branch `main`, a read-only token). The
   script pins torch (setup/runtime.lock.json `torch.linux_versions`; default cu130 = 2.12.1: the cu128 index ends at 2.11).
+  Pod facts (static audit 2026-10-26): a container sees the HOST's RAM in psutil, so RAM checks read the cgroup limit
+  (sysinfo.total_ram); the locks need flock on the volume (the install checks it; locks.py raises other lock errors
+  instead of reporting "busy"); the tunnel's local port must be 8765 (the app's Host check).
 
 ## 11. Development
 
