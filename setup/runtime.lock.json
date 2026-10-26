@@ -1,0 +1,47 @@
+{
+ "_about": "The runtime that cinestudio was tested on (2026-10-22, Windows + RTX 3070), pinned for a Linux GPU machine (setup/install_linux.sh). Node packs: only the ones the current graphs and scripts use (checked against ComfyUI's /object_info python_module of every node type in workflows/ and in the code). Change a pin only after a test run.",
+ "comfyui": {
+  "repo": "https://github.com/Comfy-Org/ComfyUI.git",
+  "version": "v0.42.1",
+  "commit": "63be2f9b82ad0dac88a7ceaa28a9cf3154125a18"
+ },
+ "node_packs": [
+  {"name": "ComfyUI-LTXVideo", "repo": "https://github.com/Lightricks/ComfyUI-LTXVideo.git",
+   "commit": "220e1d45aa0469f518e982102fca4dca92a61862",
+   "why": "LTX-2.5 guiders, IC-LoRA loader and guides, AdaIN, latent select (the video)"},
+  {"name": "ComfyUI-GGUF", "repo": "https://github.com/city96/ComfyUI-GGUF.git",
+   "commit": "6ea2651e7df66d7585f6ffee804b20e92fb38b8a",
+   "why": "UnetLoaderGGUF (the Qwen-Image-2512 Q8 panorama model)"},
+  {"name": "ComfyUI-segment-anything-2", "repo": "https://github.com/kijai/ComfyUI-segment-anything-2.git",
+   "commit": "0c35fff5f382803e2310103357b5e985f5437f32",
+   "why": "SAM 2.1 figure selection (shot mask); reads its weights only from <ComfyUI>/models/sam2"},
+  {"name": "comfyui_controlnet_aux", "repo": "https://github.com/Fannovel16/comfyui_controlnet_aux.git",
+   "commit": "e8b689a513c3e6b63edc44066560ca5919c0576e",
+   "version": "1.1.5",
+   "why": "DWPose (imported by cinestudio/video_passes.py, pose_people.py, motion_follow.py); the local copy was a download without git history: its pyproject.toml matches this 1.1.5 release commit"}
+ ],
+ "python": {
+  "tested": "3.13.12 (ComfyUI), 3.13 (app)",
+  "minimum": "3.12"
+ },
+ "torch": {
+  "tested": "2.12.1+cu130",
+  "linux_default_index": "https://download.pytorch.org/whl/cu130",
+  "linux_versions": {"cu130": "2.12.1", "cu128": "2.11.0"},
+  "note": "cu130 (the default, the tested build) needs NVIDIA drivers >= 580. The cu128 index ends at torch 2.11 (checked 2026-10-24), so --cuda cu128 (drivers >= 570) installs torch 2.11.0: untested. The version is pinned: without a pin pip took the newest torch (2.14.1 on cu130)."
+ },
+ "sageattention": {
+  "tested": "1.0.6",
+  "note": "optional; cinestudio turns it on only for LTX-2.5 families (comfy.SAGE_FAMILIES): Qwen-Image-Edit drew all-black pictures with it"
+ },
+ "blender": {
+  "version": "5.2.0 LTS",
+  "linux_url": "https://download.blender.org/release/Blender5.2/blender-5.2.0-linux-x64.tar.xz",
+  "sha256": "96f6c181a30f4950607839dc84d42a354b250d8a0231b098b59b7bc69c351c48"
+ },
+ "pod": {
+  "image": "a stock RunPod PyTorch image (Ubuntu 22.04/24.04, Python >= 3.10); record its exact tag and digest here after the first successful test",
+  "volume": "a network volume mounted at /workspace for the models (8gb tier ~150 GB, large tier ~220 GB) and the cinestudio home",
+  "access": "the app listens on 127.0.0.1:8765: use an SSH tunnel (ssh -L 8765:127.0.0.1:8765 ...)"
+ }
+}

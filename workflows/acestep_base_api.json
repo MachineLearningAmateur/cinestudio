@@ -1,0 +1,132 @@
+{
+ "msaf": {
+  "class_type": "ModelSamplingAuraFlow",
+  "inputs": {
+   "model": [
+    "unet",
+    0
+   ],
+   "shift": 3
+  }
+ },
+ "enc": {
+  "class_type": "TextEncodeAceStepAudio1.5",
+  "inputs": {
+   "clip": [
+    "clip",
+    0
+   ],
+   "tags": "",
+   "lyrics": "",
+   "seed": 31,
+   "bpm": 120,
+   "duration": 30.0,
+   "timesignature": "4",
+   "language": "en",
+   "keyscale": "E minor",
+   "generate_audio_codes": true,
+   "cfg_scale": 2.0,
+   "temperature": 0.85,
+   "top_p": 0.9,
+   "top_k": 0,
+   "min_p": 0.0
+  }
+ },
+ "neg": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "enc",
+    0
+   ]
+  }
+ },
+ "lat": {
+  "class_type": "EmptyAceStep1.5LatentAudio",
+  "inputs": {
+   "seconds": 30.0,
+   "batch_size": 1
+  }
+ },
+ "ks": {
+  "class_type": "KSampler",
+  "inputs": {
+   "model": [
+    "msaf",
+    0
+   ],
+   "positive": [
+    "enc",
+    0
+   ],
+   "negative": [
+    "neg",
+    0
+   ],
+   "latent_image": [
+    "lat",
+    0
+   ],
+   "seed": 31,
+   "steps": 50,
+   "cfg": 6.0,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1.0
+  }
+ },
+ "dec": {
+  "class_type": "VAEDecodeAudio",
+  "inputs": {
+   "samples": [
+    "ks",
+    0
+   ],
+   "vae": [
+    "vae",
+    0
+   ]
+  }
+ },
+ "save": {
+  "class_type": "SaveAudio",
+  "inputs": {
+   "audio": [
+    "dec",
+    0
+   ],
+   "filename_prefix": "cinestudio/song"
+  }
+ },
+ "unet": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "acestep_v1.5_base.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "ACE-Step 1.5 (full)"
+  }
+ },
+ "clip": {
+  "class_type": "DualCLIPLoader",
+  "inputs": {
+   "clip_name1": "qwen_0.6b_ace15.safetensors",
+   "clip_name2": "qwen_1.7b_ace15.safetensors",
+   "type": "ace",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "ACE-Step text encoders"
+  }
+ },
+ "vae": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "ace_1.5_vae.safetensors"
+  },
+  "_meta": {
+   "title": "ACE VAE"
+  }
+ }
+}

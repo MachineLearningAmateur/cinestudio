@@ -1,0 +1,287 @@
+{
+ "name": "shan_shen_bu_balls",
+ "kind": "blender",
+ "description": "A Blender render of the viral Chinese meme dance 'shan shen bu' (flash step) as a dodgeball gag, with its music: one mannequin dodges sideways with hard stops while three dodgeballs thrown from the front pass its head by a hair at each flash step, kicks two balls away with its side flicks, lifts its knees and claps above its head, then catches a ball bounced off the floor in the raised hand of its quirky ta-da end pose (left hand on the hip, head tilted, left knee popped inward), held 0.5 s. 11.5 s (3 clips), a still front camera. Six balls in the Props layer (matte deep violet rubber dodgeballs with a thin magenta seam) and a blocked-out school gym in neutral grey in the Set layer (court lines, the basket, padded back wall, doors, a ball cart, an empty banner and an empty scoreboard). Comes with its backplate gym_noir_comfyui (an anime-noir gym drawn over this set; preselected in the Video tab).",
+ "seconds": 11.5,
+ "frames": 276,
+ "added": 1792908084.4806662,
+ "ended": 1792908100.2000546,
+ "layers": {
+  "scan": {
+   "characters": [
+    {
+     "collection": "Mannequin",
+     "rig": "MannequinRig",
+     "objects": 107,
+     "place": [
+      0.0462,
+      0.0
+     ],
+     "screen": {
+      "head": [
+       0.512,
+       0.1955
+      ],
+      "feet": [
+       0.5093,
+       0.8106
+      ]
+     },
+     "height_m": 1.752
+    }
+   ],
+   "props": [
+    {
+     "name": "Ball_Dodge1",
+     "animated": true,
+     "parent": null
+    },
+    {
+     "name": "Ball_Dodge1_Seam",
+     "animated": true,
+     "parent": "Ball_Dodge1"
+    },
+    {
+     "name": "Ball_Dodge2",
+     "animated": true,
+     "parent": null
+    },
+    {
+     "name": "Ball_Dodge2_Seam",
+     "animated": true,
+     "parent": "Ball_Dodge2"
+    },
+    {
+     "name": "Ball_Dodge3",
+     "animated": true,
+     "parent": null
+    },
+    {
+     "name": "Ball_Dodge3_Seam",
+     "animated": true,
+     "parent": "Ball_Dodge3"
+    },
+    {
+     "name": "Ball_Kick1",
+     "animated": true,
+     "parent": null
+    },
+    {
+     "name": "Ball_Kick1_Seam",
+     "animated": true,
+     "parent": "Ball_Kick1"
+    },
+    {
+     "name": "Ball_Kick2",
+     "animated": true,
+     "parent": null
+    },
+    {
+     "name": "Ball_Kick2_Seam",
+     "animated": true,
+     "parent": "Ball_Kick2"
+    },
+    {
+     "name": "Ball_Catch",
+     "animated": true,
+     "parent": null
+    },
+    {
+     "name": "Ball_Catch_Seam",
+     "animated": true,
+     "parent": "Ball_Catch"
+    }
+   ],
+   "set": [
+    "Banner",
+    "Banner_Border",
+    "Banner_Right",
+    "Banner_Right_Border",
+    "Bleacher_Step_1",
+    "Bleacher_Step_2",
+    "Bleacher_Step_3",
+    "Bleacher_Step_4",
+    "Bleacher_Step_5",
+    "Bleacher_Step_6",
+    "Cart_Ball_01",
+    "Cart_Ball_02",
+    "Cart_Ball_03",
+    "Cart_Ball_04",
+    "Cart_Ball_05",
+    "Cart_Ball_06",
+    "Cart_Ball_07",
+    "Cart_Ball_08",
+    "Cart_Ball_09",
+    "Cart_Ball_10",
+    "Cart_Bottom",
+    "Cart_Post_1",
+    "Cart_Post_2",
+    "Cart_Post_3",
+    "Cart_Post_4",
+    "Cart_Rail_B",
+    "Cart_Rail_F",
+    "Cart_Side_B",
+    "Cart_Side_F",
+    "Cart_Side_L",
+    "Cart_Side_R",
+    "Cart_Wheel_1",
+    "Cart_Wheel_2",
+    "Cart_Wheel_3",
+    "Cart_Wheel_4",
+    "Hoop_Arm",
+    "Hoop_Backboard",
+    "Hoop_Frame_L",
+    "Hoop_Frame_R",
+    "Hoop_Frame_Top",
+    "Hoop_Net",
+    "Hoop_Rim",
+    "Hoop_Square_B",
+    "Hoop_Square_L",
+    "Hoop_Square_R",
+    "Hoop_Square_T",
+    "Line_Baseline",
+    "Line_FreeThrow",
+    "Line_FreeThrowCircle",
+    "Line_FreeThrowDash_1",
+    "Line_FreeThrowDash_2",
+    "Line_FreeThrowDash_3",
+    "Line_FreeThrowDash_4",
+    "Line_FreeThrowDash_5",
+    "Line_FreeThrowDash_6",
+    "Line_FreeThrowDash_7",
+    "Line_FreeThrowDash_8",
+    "Line_KeyPaint",
+    "Line_Lane_L",
+    "Line_Lane_R",
+    "Line_NoChargeArc",
+    "Line_NoCharge_L",
+    "Line_NoCharge_R",
+    "Line_Side_L",
+    "Line_Side_R",
+    "Line_ThreeArc",
+    "Line_Three_L",
+    "Line_Three_R",
+    "Plane",
+    "WallDoor_1",
+    "WallDoor_1_Gap",
+    "WallDoor_2",
+    "WallDoor_2_Gap",
+    "WallExit_1",
+    "WallExit_2",
+    "WallMat_01",
+    "WallMat_02",
+    "WallMat_03",
+    "WallMat_04",
+    "WallMat_05",
+    "WallMat_06",
+    "WallMat_07",
+    "WallMat_08",
+    "WallMat_09",
+    "WallMat_10",
+    "WallStripe",
+    "Wall_Back",
+    "Wall_Left",
+    "Wall_Right"
+   ],
+   "loose": [],
+   "camera_moves": false,
+   "frames": [
+    1,
+    276
+   ]
+  },
+  "descriptions": {
+   "set": "an indoor school gymnasium: a wooden basketball court with a painted key and court lines, padded mats along the back wall, two double doors with exit signs, two framed banners on the back wall, one on each side of the hoop, a basketball hoop hung from the roof, a cart of balls in the back-left corner",
+   "props": {
+    "Ball_*": "matte deep violet rubber dodgeballs with a thin magenta seam"
+   }
+  },
+  "warnings": []
+ },
+ "params": {},
+ "order": 4,
+ "files": {
+  "blend": "shot.blend",
+  "preview": "preview.mp4"
+ },
+ "builtin": true,
+ "background": "gym_noir_comfyui",
+ "timeline": {
+  "events": [
+   {
+    "what": "feet move",
+    "frames": [
+     1,
+     276
+    ]
+   },
+   {
+    "what": "raises its left hand",
+    "frames": [
+     145,
+     155
+    ]
+   },
+   {
+    "what": "raises its right hand",
+    "frames": [
+     145,
+     154
+    ]
+   },
+   {
+    "what": "raises its right hand",
+    "frames": [
+     175,
+     188
+    ]
+   },
+   {
+    "what": "raises its left hand",
+    "frames": [
+     176,
+     187
+    ]
+   },
+   {
+    "what": "raises its left hand",
+    "frames": [
+     209,
+     222
+    ]
+   },
+   {
+    "what": "raises its right hand",
+    "frames": [
+     209,
+     222
+    ]
+   },
+   {
+    "what": "raises its right hand",
+    "frames": [
+     253,
+     276
+    ]
+   }
+  ],
+  "frames": [
+   1,
+   276
+  ],
+  "file": "timeline.json"
+ },
+ "clip_context": "A wide shot, front-facing, the camera remains static. {character} faces the camera the whole time and dances the flash step: quick sideways slides with hard stops, small fast steps, knee lifts and foot flicks, loose arm swings.",
+ "clip_texts": {
+  "1": "{character} slides toward the right of the picture, stops hard, slides back toward the left, stops, slides right again, then flicks the left foot out to the side.",
+  "2": "{character} kicks a second dodgeball away with the right foot, then claps both hands high above the head twice with bouncy steps in place.",
+  "3": "{character} raises both hands above the head once more, then strikes a playful ta-da pose: the right arm thrown up on the left side of the picture, the left hand on the hip, the head tilted. A dodgeball bounces once on the floor and lands in the raised right hand, which catches and holds it."
+ },
+ "check": {
+  "errors": 0,
+  "warnings": 2,
+  "at": 1792990591.3,
+  "sha": "edbe84d1525b6c6d957f5802f0fa00ffcc87ae07d491ad691aad1ca745aba5db",
+  "fp": "aba51d7b41f69f0a"
+ }
+}

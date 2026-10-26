@@ -1,0 +1,46 @@
+{
+ "_about": "The 360 depth of a panorama (MoGe-2 ViT-L, Microsoft, MIT; ComfyUI's native MoGePanoramaInference: the panorama split into perspective views, depth per view, merged) saved as a mesh (GLB). bpy_jobs/pano_world.py --ground depth reads only the DISTANCE of each panorama pixel from it (cinestudio/pano_depth.py) and builds its own mesh in Blender's panorama convention; the scale comes from the eye height. Relative scale (no metric scale across views); the sky (no geometry) is set far away by the node.",
+ "profile": "moge",
+ "capabilities": {
+  "model_family": "moge",
+  "output": "mesh"
+ },
+ "models": {
+  "pano_depth": [
+   [
+    "model",
+    "model_name"
+   ]
+  ]
+ },
+ "inputs": {
+  "pano": [
+   [
+    "load",
+    "image"
+   ]
+  ],
+  "decimation": [
+   [
+    "mesh",
+    "decimation"
+   ]
+  ],
+  "merge_resolution": [
+   [
+    "pano",
+    "merge_resolution"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ]
+ },
+ "outputs": {
+  "video": "save",
+  "image": "save"
+ }
+}

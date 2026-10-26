@@ -1,0 +1,171 @@
+{
+ "vid": {
+  "class_type": "LoadVideo",
+  "inputs": {
+   "file": "VIDEO.mp4"
+  },
+  "_meta": {
+   "title": "the reference video"
+  }
+ },
+ "comp": {
+  "class_type": "GetVideoComponents",
+  "inputs": {
+   "video": [
+    "vid",
+    0
+   ]
+  }
+ },
+ "sam3": {
+  "class_type": "CheckpointLoaderSimple",
+  "inputs": {
+   "ckpt_name": "sam3.1_multiplex_fp16.safetensors"
+  },
+  "_meta": {
+   "title": "SAM 3.1 (MODEL + its text encoder)"
+  }
+ },
+ "who": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "person",
+   "clip": [
+    "sam3",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "what to find and follow"
+  }
+ },
+ "track": {
+  "class_type": "SAM3_VideoTrack",
+  "inputs": {
+   "images": [
+    "comp",
+    0
+   ],
+   "model": [
+    "sam3",
+    0
+   ],
+   "conditioning": [
+    "who",
+    0
+   ],
+   "detection_threshold": 0.5,
+   "max_objects": 4,
+   "detect_interval": 1
+  },
+  "_meta": {
+   "title": "every person, numbered 0, 1, 2 ... in the order SAM 3 finds them"
+  }
+ },
+ "labels": {
+  "class_type": "SAM3_TrackPreview",
+  "inputs": {
+   "track_data": [
+    "track",
+    0
+   ],
+   "opacity": 1.0,
+   "fps": 24.0
+  },
+  "_meta": {
+   "title": "label video: each person's mask in its own flat colour on black (read by cinestudio/mocap.py)"
+  }
+ },
+ "preview": {
+  "class_type": "SAM3_TrackPreview",
+  "inputs": {
+   "track_data": [
+    "track",
+    0
+   ],
+   "images": [
+    "comp",
+    0
+   ],
+   "opacity": 0.5,
+   "fps": 24.0
+  },
+  "_meta": {
+   "title": "who is who: the video with numbered masks"
+  }
+ },
+ "load": {
+  "class_type": "SAM3DBody_Loader",
+  "inputs": {
+   "model_file": "sam_3d_body_dinov3_bf16.safetensors"
+  }
+ },
+ "pred": {
+  "class_type": "SAM3DBody_Predict",
+  "inputs": {
+   "sam3d_body_model": [
+    "load",
+    0
+   ],
+   "image": [
+    "comp",
+    0
+   ],
+   "track_data": [
+    "track",
+    0
+   ],
+   "run_hand_refinement": true,
+   "fov": 0.0,
+   "batch_size": 16
+  }
+ },
+ "smooth": {
+  "class_type": "SAM3DBody_Smooth",
+  "inputs": {
+   "mhr_pose_data": [
+    "pred",
+    0
+   ],
+   "strength": 0.0,
+   "method": "savgol",
+   "window": 7,
+   "rotation_threshold_degrees": 30.0
+  },
+  "_meta": {
+   "title": "optional: removed unless smooth_strength > 0 (mocap.py smooths on its own)"
+  }
+ },
+ "build": {
+  "class_type": "BuildPoseFile",
+  "inputs": {
+   "pose_data": [
+    "smooth",
+    0
+   ],
+   "format": "glb",
+   "format.mesh_style": "openpose",
+   "format.mesh_style.marker_radius_m": 0.01,
+   "format.mesh_style.stick_radius_m": 0.008,
+   "format.mesh_style.include_hands": true,
+   "format.mesh_style.hand_marker_radius_m": 0.005,
+   "format.mesh_style.hand_stick_radius_m": 0.003,
+   "format.mesh_style.face_style": "disabled",
+   "fps": 24.0,
+   "camera_translation": "absolute",
+   "track_index": -1,
+   "format.mesh_style.face_marker_radius_m": 0.0,
+   "format.bone_smooth_window": 0
+  }
+ },
+ "save": {
+  "class_type": "SaveGLB",
+  "inputs": {
+   "mesh": [
+    "build",
+    0
+   ],
+   "filename_prefix": "cinestudio/sam3d_multi"
+  }
+ }
+}

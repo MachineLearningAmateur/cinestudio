@@ -1,0 +1,10 @@
+{
+ "label": "3D animated",
+ "version": 1,
+ "words": "stylized cinematic 3D animation, animated-film look, soft stylized shapes and proportions, soft painted materials, detailed fabric materials, soft global illumination",
+ "light": "evenly lit by soft neutral light from the front",
+ "negative_image": "flat 2D illustration, line art, cel shading, dark outlines, anime drawing, photo, photorealistic, plastic toy, vinyl figure, product photo",
+ "lora": null,
+ "reference": null,
+ "_about": "Masked 3D and Kitsune 3D (2026-10-25). The 3dsrx LTX LoRA (a Civitai download) is added in the user's own copy of this style, not here."
+}

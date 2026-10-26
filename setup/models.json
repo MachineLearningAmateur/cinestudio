@@ -1,0 +1,459 @@
+{
+ "_about": "Model files per profile. 'dir' is relative to the ComfyUI models folder. Sources are the official Hugging Face repos used by the ComfyUI templates. Licences: see docs/MODELS.md. URLs are pinned to a repository commit; size and sha256 are required and checked before a file is used.",
+ "ltx23": [
+  {
+   "dir": "loras",
+   "file": "ltx-2.3-22b-ic-lora-union-control-ref0.5.safetensors",
+   "url": "https://huggingface.co/Lightricks/LTX-2.3-22b-IC-LoRA-Union-Control/resolve/b4d1c4d8c9e544e9bbbd6811bb4363708b6093ff/ltx-2.3-22b-ic-lora-union-control-ref0.5.safetensors",
+   "size": 654465352,
+   "sha256": "a1b888a87f661d27f08b394ae559e8e1050be33900bcc36a5cdf659e48f88d18"
+  },
+  {
+   "dir": "loras",
+   "file": "ltx-2.3-22b-ic-lora-ingredients-0.9.safetensors",
+   "url": "https://huggingface.co/Comfy-Org/ltx-2.3/resolve/f20f3a54378001e5e6d642acc84719cc78addf4b/split_files/loras/ltx-2.3-22b-ic-lora-ingredients-0.9.safetensors",
+   "size": 1308778338,
+   "sha256": "515e4e139001ac6282357a5b35372e42e98b3affd5fcc886a52242abeed19559"
+  }
+ ],
+ "zimage": [
+  {
+   "dir": "text_encoders",
+   "file": "qwen_3_4b.safetensors",
+   "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/6fc90a3b1b653e935a0d175e260736de25b84df5/split_files/text_encoders/qwen_3_4b.safetensors",
+   "size": 8044982048,
+   "sha256": "6c671498573ac2f7a5501502ccce8d2b08ea6ca2f661c458e708f36b36edfc5a"
+  },
+  {
+   "dir": "vae",
+   "file": "ae.safetensors",
+   "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/6fc90a3b1b653e935a0d175e260736de25b84df5/split_files/vae/ae.safetensors",
+   "size": 335304388,
+   "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38"
+  }
+ ],
+ "qwen_edit": [
+  {
+   "dir": "diffusion_models",
+   "file": "qwen_image_edit_2511_int8_convrot.safetensors",
+   "url": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/f68ace85e60b4a02a323e394253731947657b7d2/split_files/diffusion_models/qwen_image_edit_2511_int8_convrot.safetensors",
+   "size": 20499083824,
+   "sha256": "11b5af5ac601821d73930c84846c9a158e67177356daf927ce1c8d10f3963829"
+  },
+  {
+   "dir": "text_encoders",
+   "file": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/1f12b17be14c89b026c51a91d67c32f84bb047bc/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "size": 9384670680,
+   "sha256": "cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4"
+  },
+  {
+   "dir": "vae",
+   "file": "qwen_image_vae.safetensors",
+   "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/1f12b17be14c89b026c51a91d67c32f84bb047bc/split_files/vae/qwen_image_vae.safetensors",
+   "size": 253806246,
+   "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f"
+  },
+  {
+   "dir": "loras",
+   "file": "qwen-image-edit-2511-multiple-angles-lora.safetensors",
+   "url": "https://huggingface.co/fal/Qwen-Image-Edit-2511-Multiple-Angles-LoRA/resolve/e3066224ab74263f4a5b6179cd1a3b0a15577e44/qwen-image-edit-2511-multiple-angles-lora.safetensors",
+   "size": 295140688,
+   "sha256": "42426ded4e25fd22879d9e198b857556445ef4ca56e8da3246d0345155bb6765"
+  }
+ ],
+ "sam2": [
+  {
+   "dir": "sam2",
+   "file": "sam2.1_hiera_large.safetensors",
+   "url": "https://huggingface.co/Kijai/sam2-safetensors/resolve/f885607d88bb3f9145efa49c3e3c50a9e5bf13eb/sam2.1_hiera_large.safetensors",
+   "size": 897893808,
+   "sha256": "da2b64780d0226cf37773b88a050d6df64552971b4bf97a90d39728377309ebb"
+  },
+  {
+   "dir": "sam2",
+   "file": "sam2.1_hiera_tiny.safetensors",
+   "url": "https://huggingface.co/Kijai/sam2-safetensors/resolve/f885607d88bb3f9145efa49c3e3c50a9e5bf13eb/sam2.1_hiera_tiny.safetensors",
+   "size": 155906872,
+   "sha256": "79505ba9891937ce2b3ed0154f888877de62abc8f66536016329bcf290bae80a"
+  }
+ ],
+ "model_tiers": {
+  "_about": "Model tiers (Settings > Quick setup, `cinestudio models`). Every tier uses the FULL (non-distilled) models; a tier sets the precision only. Files are pinned like the profiles above. 'common' slots are the same in every tier. A dir that starts with '@aux/' is inside the comfyui_controlnet_aux node folder. Graphs use a tier only when their binding says capabilities.recipe = 'full' and lists the slots in 'models' (the distilled graphs keep their own files).",
+  "features": {
+   "video": [
+    "ltx25_model",
+    "ltx25_text",
+    "ltx25_vae",
+    "ltx25_audio_vae",
+    "ltx25_upscale",
+    "ic_union",
+    "ic_ingredients25",
+    "ic_layout",
+    "ltx25_distilled",
+    "ltx25_distilled_lora",
+    "qwen_edit_model",
+    "qwen_edit_text",
+    "qwen_vae"
+   ],
+   "full_stage2": [
+    "ltx25_distilled_lora"
+   ],
+   "character": [
+    "zimage_model",
+    "zimage_text",
+    "zimage_vae",
+    "qwen_edit_model",
+    "qwen_edit_text",
+    "qwen_vae",
+    "qwen_angles",
+    "anypose_base",
+    "anypose_helper",
+    "qwen_style_transfer"
+   ],
+   "music": [
+    "ace_model",
+    "ace_text1",
+    "ace_text2",
+    "ace_vae"
+   ],
+   "select": [
+    "sam2_large",
+    "sam2_tiny"
+   ],
+   "pose": [
+    "dwpose",
+    "yolox"
+   ],
+   "background": [
+    "pano_model",
+    "pano_lora",
+    "qwen_edit_text",
+    "qwen_vae",
+    "pano_depth"
+   ],
+   "mocap": [
+    "sam3d_body",
+    "sam3"
+   ]
+  },
+  "common": {
+   "ic_union": {
+    "dir": "loras",
+    "file": "ltx-2.3-22b-ic-lora-union-control-ref0.5.safetensors",
+    "url": "https://huggingface.co/Lightricks/LTX-2.3-22b-IC-LoRA-Union-Control/resolve/b4d1c4d8c9e544e9bbbd6811bb4363708b6093ff/ltx-2.3-22b-ic-lora-union-control-ref0.5.safetensors",
+    "size": 654465352,
+    "sha256": "a1b888a87f661d27f08b394ae559e8e1050be33900bcc36a5cdf659e48f88d18"
+   },
+   "zimage_model": {
+    "dir": "diffusion_models",
+    "file": "z_image_bf16.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/z_image/resolve/94d47a468ec820d29a5dc09d4642539d76d49542/split_files/diffusion_models/z_image_bf16.safetensors",
+    "size": 12309866400,
+    "sha256": "996a67d3ff666946b1c25cbc16d1b1918b6cc0ac166309e23fe3b3d830263dee"
+   },
+   "zimage_text": {
+    "dir": "text_encoders",
+    "file": "qwen_3_4b.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/6fc90a3b1b653e935a0d175e260736de25b84df5/split_files/text_encoders/qwen_3_4b.safetensors",
+    "size": 8044982048,
+    "sha256": "6c671498573ac2f7a5501502ccce8d2b08ea6ca2f661c458e708f36b36edfc5a"
+   },
+   "zimage_vae": {
+    "dir": "vae",
+    "file": "ae.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/6fc90a3b1b653e935a0d175e260736de25b84df5/split_files/vae/ae.safetensors",
+    "size": 335304388,
+    "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38"
+   },
+   "qwen_vae": {
+    "dir": "vae",
+    "file": "qwen_image_vae.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/1f12b17be14c89b026c51a91d67c32f84bb047bc/split_files/vae/qwen_image_vae.safetensors",
+    "size": 253806246,
+    "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f"
+   },
+   "qwen_angles": {
+    "dir": "loras",
+    "file": "qwen-image-edit-2511-multiple-angles-lora.safetensors",
+    "url": "https://huggingface.co/fal/Qwen-Image-Edit-2511-Multiple-Angles-LoRA/resolve/e3066224ab74263f4a5b6179cd1a3b0a15577e44/qwen-image-edit-2511-multiple-angles-lora.safetensors",
+    "size": 295140688,
+    "sha256": "42426ded4e25fd22879d9e198b857556445ef4ca56e8da3246d0345155bb6765"
+   },
+   "ace_text1": {
+    "dir": "text_encoders",
+    "file": "qwen_0.6b_ace15.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/6707deb277e9e0907fd9c14ce6b6f1d695c6a3fc/split_files/text_encoders/qwen_0.6b_ace15.safetensors",
+    "size": 1191588248,
+    "sha256": "fd4590c82153b8ddb67e15a2e7aaa8afa8b83a858c8a9b82a4831063156aa7a7"
+   },
+   "ace_vae": {
+    "dir": "vae",
+    "file": "ace_1.5_vae.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/6707deb277e9e0907fd9c14ce6b6f1d695c6a3fc/split_files/vae/ace_1.5_vae.safetensors",
+    "size": 337431732,
+    "sha256": "6de92e3a862acd287e08b024ac90f0783a8635451b728721a33ff03565bcb2bb"
+   },
+   "sam2_large": {
+    "dir": "sam2",
+    "file": "sam2.1_hiera_large.safetensors",
+    "url": "https://huggingface.co/Kijai/sam2-safetensors/resolve/f885607d88bb3f9145efa49c3e3c50a9e5bf13eb/sam2.1_hiera_large.safetensors",
+    "size": 897893808,
+    "sha256": "da2b64780d0226cf37773b88a050d6df64552971b4bf97a90d39728377309ebb"
+   },
+   "sam2_tiny": {
+    "dir": "sam2",
+    "file": "sam2.1_hiera_tiny.safetensors",
+    "url": "https://huggingface.co/Kijai/sam2-safetensors/resolve/f885607d88bb3f9145efa49c3e3c50a9e5bf13eb/sam2.1_hiera_tiny.safetensors",
+    "size": 155906872,
+    "sha256": "79505ba9891937ce2b3ed0154f888877de62abc8f66536016329bcf290bae80a"
+   },
+   "dwpose": {
+    "dir": "@aux/ckpts/hr16/DWPose-TorchScript-BatchSize5",
+    "file": "dw-ll_ucoco_384_bs5.torchscript.pt",
+    "url": "https://huggingface.co/hr16/DWPose-TorchScript-BatchSize5/resolve/359d662a9b33b73f6d0f21732baf8845f17bb4be/dw-ll_ucoco_384_bs5.torchscript.pt",
+    "size": 135059124,
+    "sha256": "d86a0b2b59fddc0901a7076e9f59c9f8602602133ed72511c693fd11eea23d91"
+   },
+   "yolox": {
+    "dir": "@aux/ckpts/hr16/yolox-onnx",
+    "file": "yolox_l.torchscript.pt",
+    "url": "https://huggingface.co/hr16/yolox-onnx/resolve/a124b32c3b7c5cebda1c7cd96178f0f9d2050125/yolox_l.torchscript.pt",
+    "size": 217697649,
+    "sha256": "80bc14b13c260c24b3014cd42c02994bf52296ab8fa2d80a60b6afe08c93ef42"
+   },
+   "pano_model": {
+    "dir": "diffusion_models",
+    "file": "qwen-image-2512-Q8_0.gguf",
+    "url": "https://huggingface.co/unsloth/Qwen-Image-2512-GGUF/resolve/1626d7531f84b4d2ea1cd6d2e69f41ec027dd354/qwen-image-2512-Q8_0.gguf",
+    "size": 21761817120,
+    "sha256": "e285a0692582acf09bb4086d9b120eb0e357c4386565d169a033cb968c6fa9a5"
+   },
+   "pano_lora": {
+    "dir": "loras",
+    "file": "qwen-360-diffusion-2512-int8-bf16-v2.safetensors",
+    "url": "https://huggingface.co/ProGamerGov/qwen-360-diffusion/resolve/f63e5de60bd27b7d9af9c64f8c591381775ea9aa/qwen-360-diffusion-2512-int8-bf16-v2.safetensors",
+    "size": 755039336,
+    "sha256": "11065421c2a4c8f503ee1be5d6dc0320a9ffb5bfaded2490813046fd2312578d"
+   },
+   "ltx25_vae": {
+    "dir": "vae",
+    "file": "ltx-2.5-video-vae-bf16.safetensors",
+    "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/vae/ltx-2.5-video-vae-bf16.safetensors",
+    "size": 1472223346,
+    "sha256": "847e14ca7f3355debca0cea4eaa24ac0fbcdf0061da054ac89ca638a869ddba3",
+    "gated": true
+   },
+   "ltx25_audio_vae": {
+    "dir": "vae",
+    "file": "ltx-2.5-audio-vae-bf16.safetensors",
+    "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540,
+    "sha256": "c52733d37f6a7fb7949c3dc0fb468c6cb2169e4d836983a73babb9f0d54837a5",
+    "gated": true
+   },
+   "ltx25_upscale": {
+    "dir": "latent_upscale_models",
+    "file": "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors",
+    "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/latent_upscale_models/ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors",
+    "size": 995778752,
+    "sha256": "eb5a71fe4068ee87ccdb1c3aa635e547ca76bd2d30ae20ae889f2c325c0677e8",
+    "gated": true
+   },
+   "ic_layout": {
+    "dir": "loras",
+    "file": "ltx-2.5-22b-ic-lora-layout-to-render-1.0.safetensors",
+    "url": "https://huggingface.co/Lightricks/LTX-2.5-22b-IC-LoRA-Layout-To-Render/resolve/349625f9bad639dc41f1c70d2c63f75a02a09c59/ltx-2.5-22b-ic-lora-layout-to-render-1.0.safetensors",
+    "size": 1308787439,
+    "sha256": "77567d81d71b4df558d622dffc0ec218ba1e22c69b2932f6fa12f34772697eae",
+    "gated": true
+   },
+   "ic_ingredients25": {
+    "dir": "loras",
+    "file": "ltx-2.5-22b-ic-lora-ingredients-0.9.safetensors",
+    "url": "https://huggingface.co/Lightricks/LTX-2.5-22b-IC-LoRA-Ingredients/resolve/12040e4091ac2008d3906a594e31a7fb1ab9d546/ltx-2.5-22b-ic-lora-ingredients-0.9.safetensors",
+    "size": 1308787472,
+    "sha256": "ff873a5beada3c579a8137c7c53343916f78bcc9a529ba910143073fe8715e95",
+    "gated": true
+   },
+   "pano_depth": {
+    "dir": "geometry_estimation",
+    "file": "moge_2_vitl_normal_fp16.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/MoGe/resolve/1484985258ba7ef45c314144fcf0e90924ffbf44/geometry_estimation/moge_2_vitl_normal_fp16.safetensors",
+    "size": 661859924,
+    "sha256": "cb1a692d03235671e959e81360d7b4d9f44aefadb1f852d6ca6aa17799d5e31f",
+    "note": "MoGe-2 (Microsoft, MIT): 360 depth of a panorama for pano_world --ground depth (2026-10-22)"
+   },
+   "anypose_base": {
+    "dir": "loras",
+    "file": "2511-AnyPose-base-000006250.safetensors",
+    "url": "https://huggingface.co/serotoninboi/AnyPose/resolve/9a4cb8d2cc1330d62d6e5c48dff84d0a559e80be/2511-AnyPose-base-000006250.safetensors",
+    "size": 295146208,
+    "sha256": "0396314e43b94f7520cf5242e6aa6e8e9095d784f7e87ee45980c2e541ee8c4d"
+   },
+   "anypose_helper": {
+    "dir": "loras",
+    "file": "2511-AnyPose-helper-00006000.safetensors",
+    "url": "https://huggingface.co/serotoninboi/AnyPose/resolve/9a4cb8d2cc1330d62d6e5c48dff84d0a559e80be/2511-AnyPose-helper-00006000.safetensors",
+    "size": 295146216,
+    "sha256": "674340c62fff3cf981d0cfc55daf2f0e6f51c56b50159e241d931748200cf1eb"
+   },
+   "qwen_style_transfer": {
+    "dir": "loras",
+    "file": "qwen-image-edit-2511-style-transfer-1_20.safetensors",
+    "url": "https://huggingface.co/dx8152/Qwen-Image-Edit-2511-Style-Transfer/resolve/7e215b9ddfcff4903a5aa83c25417955ba73c5ec/style-transfer-1_20.safetensors",
+    "size": 236117040,
+    "sha256": "549d82760465f1e997cbc0da540993e093dfa8a50da85ee5d53b3964f2a4861e",
+    "note": "dx8152 Qwen-Image-Edit-2511 Style-Transfer LoRA (Apache-2.0; the repo file style-transfer-1_20.safetensors, the one the card's workflow loads at 0.8; trigger 'style transfer'): Picture 1 = the image to restyle, Picture 2 = the style reference. Style experiments 2026-10-24 (.cinestudio/gauntlet/style)"
+   },
+   "ltx25_distilled": {
+    "dir": "diffusion_models",
+    "file": "ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors",
+    "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors",
+    "size": 21504034224,
+    "sha256": "c4279eeff115cbeaca494bd2183e7d768c38fe85a184dc6afbb7159157c44334",
+    "gated": true
+   },
+   "ltx25_distilled_lora": {
+    "dir": "loras",
+    "file": "ltx-2.5-22b-distilled-lora-450-bf16.safetensors",
+    "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/loras/ltx-2.5-22b-distilled-lora-450-bf16.safetensors",
+    "size": 8899889568,
+    "sha256": "86370bbf79a9eb4edaa158907e2b48a5188fe4c5dc8ce30c7eb8f2f131a9bbf5",
+    "gated": true,
+    "note": "Lightricks' distilled LoRA for dev-transformer workflows (LTX-2 Community License, the LTX-2.5 repo): stage 2 of the FULL video model's layout graphs = the dev transformer + this LoRA, CFG 1, the distilled stage-2 sigmas 0.909375..0 (ltx-pipelines TI2VidTwoStagesPipeline; 2026-10-25). One bf16 file for both tiers; only FINAL runs load it (a preview has no stage 2). Feature video in the large tier, the optional feature full_stage2 in the 8gb tier"
+   },
+   "sam3d_body": {
+    "dir": "detection",
+    "file": "sam_3d_body_dinov3_bf16.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/sam-3d-body/resolve/7c974aea58e062252a6cb5b6f9b7f639d545b729/detection/sam_3d_body_dinov3_bf16.safetensors",
+    "size": 2830737652,
+    "sha256": "59fa45200c504c5b56625004d7d3385daf48c616613e88099e43bf83b3e249cf"
+   },
+   "sam3": {
+    "dir": "checkpoints",
+    "file": "sam3.1_multiplex_fp16.safetensors",
+    "url": "https://huggingface.co/Comfy-Org/sam3.1/resolve/7bb8374780a725b4353ed31f3a9395c9742b5621/checkpoints/sam3.1_multiplex_fp16.safetensors",
+    "size": 1745546848,
+    "sha256": "9ba99c92703c2e8b4f47de2d34a539bb8e18923049e238b780d70dbe6368eb03",
+    "note": "Meta SAM 3.1 (SAM License: royalty-free incl. commercial use; pass the licence on when redistributing, acknowledge it in publications, no ITAR/military/weapons uses), Comfy-Org's ComfyUI repackage (not gated). CheckpointLoaderSimple -> MODEL + CLIP; SAM3_VideoTrack finds and follows every 'person' for the multi-person templates from a video (workflows/sam3d_body_multi)"
+   }
+  },
+  "tiers": {
+   "8gb": {
+    "label": "8 GB VRAM",
+    "vram_gb": 8,
+    "ram_gb": 32,
+    "about": "int8 video model (LTX-2.5 dev), int8 text encoder, int8 (ConvRot) image edit model: int8 matmuls are native on RTX 30/40/50 cards; the fp8 file was emulated as bf16 on an RTX 3070 (2026-10-24). Tested class: RTX 3070 8 GB + 32 GB RAM.",
+    "optional_features": ["full_stage2"],
+    "slots": {
+     "qwen_edit_model": {
+      "dir": "diffusion_models",
+      "file": "qwen_image_edit_2511_int8_convrot.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/f68ace85e60b4a02a323e394253731947657b7d2/split_files/diffusion_models/qwen_image_edit_2511_int8_convrot.safetensors",
+      "size": 20499083824,
+      "sha256": "11b5af5ac601821d73930c84846c9a158e67177356daf927ce1c8d10f3963829"
+     },
+     "qwen_edit_text": {
+      "dir": "text_encoders",
+      "file": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/1f12b17be14c89b026c51a91d67c32f84bb047bc/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "size": 9384670680,
+      "sha256": "cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4"
+     },
+     "ace_model": {
+      "dir": "diffusion_models",
+      "file": "acestep_v1.5_base.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/6707deb277e9e0907fd9c14ce6b6f1d695c6a3fc/split_files/diffusion_models/acestep_v1.5_base.safetensors",
+      "size": 4787825604,
+      "sha256": "4177f600501a6d4bd81cadaa0abac557ffd15c54e5c8cb52053cdb24a0844d6b"
+     },
+     "ace_text2": {
+      "dir": "text_encoders",
+      "file": "qwen_1.7b_ace15.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/6707deb277e9e0907fd9c14ce6b6f1d695c6a3fc/split_files/text_encoders/qwen_1.7b_ace15.safetensors",
+      "size": 3708523360,
+      "sha256": "ed63e9247d1f55f3ace04fa11e95b085fc82d459c82c5626f0b2e37b91ebd710"
+     },
+     "ltx25_model": {
+      "dir": "diffusion_models",
+      "file": "ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors",
+      "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/diffusion_models/ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors",
+      "size": 21504034224,
+      "sha256": "2edbdb4465cd6c3b532cd67a31ddb38a63e97dcad20be3729675e2a4e8caf92b",
+      "gated": true
+     },
+     "ltx25_text": {
+      "dir": "text_encoders",
+      "file": "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+      "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/text_encoders/gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+      "size": 15372969374,
+      "sha256": "6ce688a0aa98a5fa36a9f1e6c3f42152a498cc2b53ee8c15674c64244f91487f",
+      "gated": true
+     }
+    }
+   },
+   "large": {
+    "label": "Large GPU (80 GB+)",
+    "vram_gb": 80,
+    "ram_gb": 120,
+    "about": "For an 80-96 GB GPU (RunPod: RTX PRO 6000 96 GB recommended, H100 SXM 80 GB for the fastest runs; renamed from 24gb on 2026-10-24: the bf16 files need about 68 GB for LTX + Gemma and 41 GB for Qwen, so a 24 GB card streamed them from RAM). bf16 for the full models (LTX-2.5 dev bf16, Gemma 4 bf16, Qwen edit bf16) and the larger ACE-Step XL music model; the DISTILLED LTX-2.5 (the default layout video) stays int8 like the 8gb tier (user, 2026-10-22); the panorama model stays GGUF Q8 and MoGe fp16. The RAM need is a first estimate.",
+    "engine": {
+     "_about": "several model families stay loaded in one ComfyUI engine (no restart and no reload from the network volume at each family change: server.shared_engine). Only on a machine with at least min_ram_gb of RAM: a run's Qwen (bf16 edit 41 GB + VL 17 GB) + LTX (int8 21.5 GB + Gemma bf16 26 GB) + ACE-Step XL is about 120 GB. 150 = an RTX PRO 6000 pod (188 GB) shares, an H100 SXM pod (125 GB) restarts as before. To check on the first pod.",
+     "share_families": true,
+     "min_ram_gb": 150
+    },
+    "graph_settings": {
+     "_about": "node inputs written into every graph of a run of this tier (runner._freeze_tier). VAEDecodeTiled: larger tiles decode faster on a large GPU (Lightricks: fewer, larger tiles run faster); 1024/256/128/48 = their 48 GB values (docs/large_gpu_speed_research.md). The 8gb tier keeps the graphs' 512/64/64/16.",
+     "VAEDecodeTiled": {"tile_size": 1024, "overlap": 256, "temporal_size": 128, "temporal_overlap": 48}
+    },
+    "slots": {
+     "qwen_edit_model": {
+      "dir": "diffusion_models",
+      "file": "qwen_image_edit_2511_bf16.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/f68ace85e60b4a02a323e394253731947657b7d2/split_files/diffusion_models/qwen_image_edit_2511_bf16.safetensors",
+      "size": 40861031560,
+      "sha256": "ae42d927b5fac4f278b9a894554c727e619727a63622976f2d95625be4bce08c"
+     },
+     "qwen_edit_text": {
+      "dir": "text_encoders",
+      "file": "qwen_2.5_vl_7b.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/1f12b17be14c89b026c51a91d67c32f84bb047bc/split_files/text_encoders/qwen_2.5_vl_7b.safetensors",
+      "size": 16584415576,
+      "sha256": "cfafd739459bc86257397259f612a9aee88e5b98e85b5c0d0d1717e898b3463a"
+     },
+     "ace_model": {
+      "dir": "diffusion_models",
+      "file": "acestep_v1.5_xl_sft_bf16.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/6707deb277e9e0907fd9c14ce6b6f1d695c6a3fc/split_files/diffusion_models/acestep_v1.5_xl_sft_bf16.safetensors",
+      "size": 9974719930,
+      "sha256": "3c05ae268353b3540fb1fd7db4fd77ffbda9802ec641b624e15648e030ecf3ce"
+     },
+     "ace_text2": {
+      "dir": "text_encoders",
+      "file": "qwen_4b_ace15.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/6707deb277e9e0907fd9c14ce6b6f1d695c6a3fc/split_files/text_encoders/qwen_4b_ace15.safetensors",
+      "size": 8379154232,
+      "sha256": "ffe5ffb855086c2ab55e467e9859fb01894781020a0376484dd19de166b79873"
+     },
+     "ltx25_model": {
+      "dir": "diffusion_models",
+      "file": "ltx-2.5-22b-dev-transformer-bf16.safetensors",
+      "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/diffusion_models/ltx-2.5-22b-dev-transformer-bf16.safetensors",
+      "size": 42018190584,
+      "sha256": "792a2bad501ca03262c0bc2ce7a2949e85b142ce18e30894aad5bc849c8e7584",
+      "gated": true
+     },
+     "ltx25_text": {
+      "dir": "text_encoders",
+      "file": "gemma4-12b-with-proj-ltx-2.5-bf16.safetensors",
+      "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/text_encoders/gemma4-12b-with-proj-ltx-2.5-bf16.safetensors",
+      "size": 26263858182,
+      "sha256": "ef7243612fdae7a75cb4d5cee9433e81380675fb6c213bd98ae74a9cd16561d1",
+      "gated": true
+     }
+    }
+   }
+  }
+ }
+}

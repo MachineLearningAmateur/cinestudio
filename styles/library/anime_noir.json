@@ -1,0 +1,10 @@
+{
+ "label": "Anime noir 3D",
+ "version": 1,
+ "words": "stylized 3D anime noir with soft painterly rendering, muted atmospheric environments, restrained violet and magenta accents, subtle material textures, mysterious surreal undertones; character proportions remain anime-inspired, with smooth facial surfaces and clean silhouettes",
+ "light": "cinematic low-key lighting with deep shadows",
+ "negative_image": "bright saturated colours, flat even daylight, cheerful pastel palette, photorealistic photo, chibi proportions, cluttered background, text, watermark",
+ "lora": null,
+ "reference": null,
+ "_about": "The user's anime-noir style (2026-10-24): the built-in backplate gym_noir_comfyui and the template shan_shen_bu_balls were made in it."
+}

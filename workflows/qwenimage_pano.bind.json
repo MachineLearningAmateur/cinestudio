@@ -1,0 +1,96 @@
+{
+ "_about": "A 360-degree equirectangular panorama (2:1) from text: Qwen-Image-2512 (full model, GGUF Q8) + the qwen-360-diffusion v2 LoRA. The background of a Blender run (cinestudio/background.py).",
+ "profile": "qwenimage",
+ "capabilities": {
+  "size_multiple": 16,
+  "model_family": "qwenimage",
+  "output": "image",
+  "recipe": "full"
+ },
+ "inputs": {
+  "prompt": [
+   [
+    "pos",
+    "text"
+   ]
+  ],
+  "negative": [
+   [
+    "neg",
+    "text"
+   ]
+  ],
+  "seed": [
+   [
+    "ks",
+    "seed"
+   ]
+  ],
+  "steps": [
+   [
+    "ks",
+    "steps"
+   ]
+  ],
+  "cfg": [
+   [
+    "ks",
+    "cfg"
+   ]
+  ],
+  "width": [
+   [
+    "lat",
+    "width"
+   ]
+  ],
+  "height": [
+   [
+    "lat",
+    "height"
+   ]
+  ],
+  "lora_strength": [
+   [
+    "lora",
+    "strength_model"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ]
+ },
+ "models": {
+  "pano_model": [
+   [
+    "unet",
+    "unet_name"
+   ]
+  ],
+  "pano_lora": [
+   [
+    "lora",
+    "lora_name"
+   ]
+  ],
+  "qwen_edit_text": [
+   [
+    "clip",
+    "clip_name"
+   ]
+  ],
+  "qwen_vae": [
+   [
+    "vae",
+    "vae_name"
+   ]
+  ]
+ },
+ "outputs": {
+  "video": "save",
+  "image": "save"
+ }
+}

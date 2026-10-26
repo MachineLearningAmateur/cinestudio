@@ -1,0 +1,74 @@
+{
+ "vid": {
+  "class_type": "LoadVideo",
+  "inputs": {
+   "file": "VIDEO.mp4"
+  },
+  "_meta": {
+   "title": "the reference video"
+  }
+ },
+ "comp": {
+  "class_type": "GetVideoComponents",
+  "inputs": {
+   "video": [
+    "vid",
+    0
+   ]
+  }
+ },
+ "load": {
+  "class_type": "SAM3DBody_Loader",
+  "inputs": {
+   "model_file": "sam_3d_body_dinov3_bf16.safetensors"
+  }
+ },
+ "pred": {
+  "class_type": "SAM3DBody_Predict",
+  "inputs": {
+   "sam3d_body_model": [
+    "load",
+    0
+   ],
+   "image": [
+    "comp",
+    0
+   ],
+   "run_hand_refinement": true,
+   "fov": 0.0,
+   "batch_size": 16
+  }
+ },
+ "build": {
+  "class_type": "BuildPoseFile",
+  "inputs": {
+   "pose_data": [
+    "pred",
+    0
+   ],
+   "format": "glb",
+   "format.mesh_style": "openpose",
+   "format.mesh_style.marker_radius_m": 0.01,
+   "format.mesh_style.stick_radius_m": 0.008,
+   "format.mesh_style.include_hands": true,
+   "format.mesh_style.hand_marker_radius_m": 0.005,
+   "format.mesh_style.hand_stick_radius_m": 0.003,
+   "format.mesh_style.face_style": "disabled",
+   "fps": 30.0,
+   "camera_translation": "centered",
+   "track_index": -1,
+   "format.mesh_style.face_marker_radius_m": 0.0,
+   "format.bone_smooth_window": 0
+  }
+ },
+ "save": {
+  "class_type": "SaveGLB",
+  "inputs": {
+   "mesh": [
+    "build",
+    0
+   ],
+   "filename_prefix": "cinestudio/sam3d"
+  }
+ }
+}

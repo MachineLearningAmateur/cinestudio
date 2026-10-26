@@ -1,0 +1,16 @@
+{
+ "_comment": "The ONE source of the mannequin body math (2026-10-24): bpy_jobs/mannequin_body.py applies it in Blender; the app's live 3D view (Phase 2) and the tests read the same table. Each bone's uniform pose scale = product(mul) / product(div) of the body values (1.0 when a key is absent).",
+ "keys": ["scale", "head", "neck", "torso", "legs", "arms"],
+ "limits": [0.3, 2.0],
+ "bones": {
+  "spine": {"mul": ["torso"]},
+  "neck": {"mul": ["neck"], "div": ["torso"]},
+  "head": {"mul": ["head"], "div": ["neck"]},
+  "thigh.L": {"mul": ["legs"]},
+  "thigh.R": {"mul": ["legs"]},
+  "upper_arm.L": {"mul": ["arms"], "div": ["torso"]},
+  "upper_arm.R": {"mul": ["arms"], "div": ["torso"]}
+ },
+ "balls": {"bones": ["upper_arm.L", "upper_arm.R"], "max_aspect": 1.3, "factor": "torso"},
+ "drop": {"bone": "thigh.L", "key": "legs"}
+}

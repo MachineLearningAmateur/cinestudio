@@ -1,0 +1,109 @@
+{
+ "_about": "A song with the FULL ACE-Step 1.5 model (split files), MIT: an original song from tags and lyrics. ComfyUI's template values: 50 steps, cfg 6 (base) / 7 (XL sft), euler/simple, shift 3. A 73 s score: about 28 s in ComfyUI on an RTX 3070 (LM 4 s, DiT 16 s), plus the engine restart (docs/acestep_speed_research.md).",
+ "profile": "acestep",
+ "capabilities": {
+  "model_family": "acestep",
+  "output": "audio",
+  "recipe": "full"
+ },
+ "inputs": {
+  "tags": [
+   [
+    "enc",
+    "tags"
+   ]
+  ],
+  "lyrics": [
+   [
+    "enc",
+    "lyrics"
+   ]
+  ],
+  "seed": [
+   [
+    "enc",
+    "seed"
+   ],
+   [
+    "ks",
+    "seed"
+   ]
+  ],
+  "bpm": [
+   [
+    "enc",
+    "bpm"
+   ]
+  ],
+  "seconds": [
+   [
+    "enc",
+    "duration"
+   ],
+   [
+    "lat",
+    "seconds"
+   ]
+  ],
+  "key": [
+   [
+    "enc",
+    "keyscale"
+   ]
+  ],
+  "language": [
+   [
+    "enc",
+    "language"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ],
+  "cfg": [
+   [
+    "ks",
+    "cfg"
+   ]
+  ],
+  "steps": [
+   [
+    "ks",
+    "steps"
+   ]
+  ]
+ },
+ "outputs": {
+  "video": "save",
+  "audio": "save"
+ },
+ "models": {
+  "ace_model": [
+   [
+    "unet",
+    "unet_name"
+   ]
+  ],
+  "ace_text1": [
+   [
+    "clip",
+    "clip_name1"
+   ]
+  ],
+  "ace_text2": [
+   [
+    "clip",
+    "clip_name2"
+   ]
+  ],
+  "ace_vae": [
+   [
+    "vae",
+    "vae_name"
+   ]
+  ]
+ }
+}

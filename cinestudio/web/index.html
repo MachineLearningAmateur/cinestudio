@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>cinestudio</title>
+<meta name="theme-color" content="#15171d">
+<meta name="color-scheme" content="dark">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23211927'/%3E%3Ctext x='16' y='21.5' font-family='Segoe UI,Arial,sans-serif' font-size='15' font-weight='800' fill='%23f2ff59' text-anchor='middle'%3Ecs%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<nav class="rail" role="tablist" aria-label="Sections">
+  <div class="logo" title="cinestudio · built on ComfyUI">cs</div>
+  <button class="tab" data-tab="styles" role="tab" title="Styles: one set of look words for characters, templates, backgrounds and videos" aria-label="Styles">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor"
+      d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16.6A4.4 4.4 0 0 0 21 11c0-4.4-4-8-9-8zM6.5 12a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+  </button>
+  <button class="tab active" data-tab="characters" role="tab" title="Cast: characters and props" aria-label="Cast">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor"
+      d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"/></svg>
+  </button>
+  <button class="tab" data-tab="templates" role="tab" title="Templates: Blender shots (from a dance video, or your own .blend or video)" aria-label="Templates">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor"
+      stroke-width="1.9" stroke-linejoin="round" d="M12 2.8 20 7.2v9.6L12 21.2 4 16.8V7.2L12 2.8zM4 7.2l8 4.4 8-4.4M12 11.6v9.6"/></svg>
+  </button>
+  <button class="tab" data-tab="backgrounds" role="tab" title="Backgrounds: 360° panoramas and backplates for the videos" aria-label="Backgrounds">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor"
+      d="M3 5h18v14H3V5zm2 2v8.6l4-4.6 3.5 4 2.5-2.8 4 4.5V7H5zm11.5 1.5a1.8 1.8 0 1 1 0 3.6 1.8 1.8 0 0 1 0-3.6z"/></svg>
+  </button>
+  <button class="tab" data-tab="music" role="tab" title="Music: songs for dance templates and as a video's sound" aria-label="Music">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor"
+      d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+  </button>
+  <button class="tab" data-tab="video" role="tab" title="Video" aria-label="Video">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor"
+      d="M4 4h16v16H4V4zm2 2v2h2V6H6zm10 0v2h2V6h-2zM6 10v4h12v-4H6zm0 6v2h2v-2H6zm10 0v2h2v-2h-2zM10 6v2h4V6h-4zm0 10v2h4v-2h-4z"/></svg>
+  </button>
+  <div class="rail-fill"></div>
+  <button class="tab wf-adv-only" data-tab="workflows" role="tab" title="Workflows: the ComfyUI graphs behind each feature (advanced mode)" aria-label="Workflows">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="2.5" y="4" width="6" height="5" rx="1.4"/><rect x="2.5" y="15" width="6" height="5" rx="1.4"/><rect x="15.5" y="9.5" width="6" height="5" rx="1.4"/>
+      <path d="M8.5 6.5c4 0 3 5.5 7 5.5M8.5 17.5c4 0 3-5.5 7-5.5"/></g></svg>
+  </button>
+  <button class="tab" data-tab="settings" role="tab" title="Settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><path fill="currentColor"
+      d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5L19.4 13zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+  </button>
+</nav>
+
+<!-- ============================================================ Styles (cinestudio/web/js/styles.js) -->
+<main id="tab-styles" class="pane hidden">
+  <section class="stage">
+    <div id="style-bar" class="gallery-bar" role="toolbar" aria-label="Styles"></div>
+    <div id="style-grid" class="song-grid style-grid"></div>
+  </section>
+</main>
+
+<div id="style-dlg" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="style-dlg-title">
+  <div class="modal">
+    <div class="modal-head"><h2 id="style-dlg-title">New style <span class="muted" id="style-dlg-name"></span></h2>
+      <button type="button" class="close" id="btn-close-style-dlg" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button></div>
+    <form id="form-style-lib" class="form">
+      <p class="hint-box hidden" id="style-dlg-note"></p>
+      <div class="st-row2">
+        <label class="fl" id="style-dlg-namefield" title="Lowercase letters, digits, - and _ (the ID: characters, templates and runs refer to it)"><span>Name <i>the ID: lowercase, digits, - and _</i></span>
+          <input name="name" pattern="[a-z0-9][a-z0-9_\-]{0,63}" maxlength="64" autocomplete="off" spellcheck="false" placeholder="clay_3d"></label>
+        <label class="fl"><span>Label <i>what the app shows</i></span>
+          <input name="label" maxlength="80" autocomplete="off" placeholder="Clay 3D"></label>
+      </div>
+      <label class="fl"><span>Words <i>the look: goes into every prompt that uses this style</i></span>
+        <textarea name="words" rows="3" maxlength="2000" required placeholder="stylized cinematic 3D animation, soft stylized shapes, soft painted materials"></textarea></label>
+      <label class="fl"><span>Light <i>optional · added after the words</i></span>
+        <input name="light" maxlength="2000" autocomplete="off" placeholder="evenly lit by soft neutral light from the front"></label>
+      <label class="fl"><span>Excluded looks <i>optional · the negative words of picture jobs (Qwen, Z-Image)</i></span>
+        <textarea name="negative_image" rows="2" maxlength="2000" placeholder="flat 2D illustration, line art, photo, plastic toy"></textarea></label>
+      <div class="st-row2">
+        <label class="fl" title="An LTX style LoRA for the videos that use this style (ComfyUI models/loras)"><span>Video LoRA <i>optional</i></span>
+          <select name="lora_name" class="lora-select" id="style-dlg-lora"></select></label>
+        <label class="fl st-strength" title="LoRA strength (0 to 2; the 3D LoRA: 0.4 in our tests)"><span>Strength</span>
+          <input name="lora_strength" type="number" min="0" max="2" step="0.05" value="0.4"></label>
+      </div>
+      <div class="fl st-ref-field">
+        <span>Reference picture <i>optional · a tight crop of a character in this style (Picture 2 of a style conversion)</i></span>
+        <div class="st-ref-pick">
+          <img id="style-dlg-ref" class="hidden" alt="The reference picture">
+          <label class="bg-file"><input name="reference" type="file" accept="image/png,image/jpeg,image/webp">
+            <span id="style-dlg-ref-hint">Choose a PNG, JPG or WEBP picture</span></label>
+          <button type="button" id="btn-style-ref-remove" class="hidden" title="Take the picture away from this style">Remove</button>
+        </div>
+      </div>
+      <div class="btnrow"><span class="muted small" id="style-dlg-foot"></span><button class="primary" type="submit">Save</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="style-ref-dlg" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="style-ref-title">
+  <div class="modal">
+    <div class="modal-head"><h2 id="style-ref-title">Reference from the video model <span class="muted" id="style-ref-name"></span></h2>
+      <button type="button" class="close" id="btn-close-style-ref" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button></div>
+    <form id="form-style-ref" class="form">
+      <p class="muted small" id="style-ref-what"></p>
+      <label class="fl"><span>Subject <i>what the pictures show</i></span>
+        <textarea name="subject" rows="2" maxlength="400" required></textarea></label>
+      <div class="st-row2">
+        <label class="fl" title="One picture per seed (comma-separated)"><span>Seeds</span>
+          <input name="seeds" autocomplete="off" spellcheck="false"></label>
+        <div class="fl st-ref-go"><span>&nbsp;</span><button class="primary" type="submit" id="btn-style-ref-make">Make pictures</button></div>
+      </div>
+      <p class="muted small" id="style-ref-status" role="status"></p>
+      <div class="st-cands" id="style-ref-cands"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================ Cast: characters and props (the id stays "characters") -->
+<main id="tab-characters" class="pane no-panel">
+  <aside class="shelf">
+    <div class="cast-switch" role="tablist" aria-label="Cast">
+      <button type="button" role="tab" data-cast="characters" class="on" aria-selected="true" title="Characters">Characters</button>
+      <button type="button" role="tab" data-cast="props" aria-selected="false" title="Props: objects for the templates' Props layer">Props</button>
+    </div>
+    <button id="btn-new-char" class="tile new" title="New character" aria-label="New character">+</button>
+    <div id="char-list" class="shelf-list"></div>
+    <button id="btn-new-prop" class="tile new hidden" title="New prop" aria-label="New prop">+</button>
+    <div id="prop-list" class="shelf-list hidden"></div>
+  </aside>
+  <section class="stage">
+    <div id="char-head" class="stage-head"></div>
+    <div id="char-desc"></div>
+    <div id="jobbar"></div>
+    <div id="char-canvas" class="canvas"><div class="empty">Choose a character or press +</div></div>
+  </section>
+  <aside id="char-panel" class="panel"></aside>
+</main>
+
+<template id="tpl-new-char">
+  <form id="form-new-char" class="form newform">
+    <input name="name" class="name-input" required maxlength="80" placeholder="Character name"
+      title="Any name, for example Masked Wanderer 3D (you can rename it later). The app makes its ID from it: masked-wanderer-3d" autocomplete="off" spellcheck="false">
+    <div class="seg" role="radiogroup">
+      <label><input type="radio" name="source" value="text" checked><span>Text</span></label>
+      <label><input type="radio" name="source" value="images"><span>My images</span></label>
+      <label><input type="radio" name="source" value="sheet"><span>Sheet</span></label>
+    </div>
+    <textarea name="description" rows="4"
+      placeholder="What the character looks like: a slim young wanderer with a white kitsune mask, a teal hooded cape, a long red scarf…"></textarea>
+    <label class="fl style-field only-text" title="The look of the character, in words. It goes into every prompt of this character (front views, edits, views). Change it for another look, for example a realistic photograph or a 3D render."><span>Style <i>the look, in words: edit it for another style</i></span>
+      <textarea name="style" rows="2" required>cinematic fantasy anime cel-shaded illustration with hand-drawn linework, painted shading and stylized fantasy character design</textarea></label>
+    <label class="fl not-sheet" title="Human: before the side and back views are made, the front takes the pose of the character's own mannequin (AnyPose: straight, arms relaxed, feet hip-width), so the sheet matches the rig. About 12 minutes more. Other: the views keep the drawn pose (animals, robots, creatures)."><span>Body type <i>human: posed like the mannequin</i></span>
+      <select name="body"><option value="human" selected>Human</option><option value="other">Other</option></select></label>
+    <div class="only-images drops">
+      <label class="drop req" data-slot="front"><input name="front" type="file" accept="image/png,image/jpeg,image/webp"><span>Front</span></label>
+      <label class="drop" data-slot="right"><input name="right" type="file" accept="image/png,image/jpeg,image/webp"><span>Right</span></label>
+      <label class="drop" data-slot="back"><input name="back" type="file" accept="image/png,image/jpeg,image/webp"><span>Back</span></label>
+      <label class="drop" data-slot="left"><input name="left" type="file" accept="image/png,image/jpeg,image/webp"><span>Left</span></label>
+      <label class="drop" data-slot="face"><input name="face" type="file" accept="image/png,image/jpeg,image/webp"><span>Face</span></label>
+    </div>
+    <div class="only-sheet drops one">
+      <label class="drop req wide"><input name="image" type="file" accept="image/png,image/jpeg,image/webp"><span>Sheet</span></label>
+    </div>
+    <details class="only-text">
+      <summary>More</summary>
+      <div class="more">
+        <input name="candidates" type="number" min="1" max="16" value="8" title="Front views to choose from">
+      </div>
+    </details>
+    <button class="primary" type="submit">Create</button>
+  </form>
+</template>
+
+
+<!-- the Cast tab's Props (cinestudio/web/js/props.js): a new prop from words (a GPU job) or from a picture -->
+<template id="tpl-new-prop">
+  <form id="form-new-prop" class="form newform">
+    <input name="name" class="name-input" required maxlength="80" placeholder="Prop name"
+      title="Any name, for example Dodgeball (you can rename it later). The app makes its ID from it: dodgeball" autocomplete="off" spellcheck="false">
+    <div class="seg" role="radiogroup">
+      <label><input type="radio" name="source" value="text" checked><span>Words</span></label>
+      <label><input type="radio" name="source" value="image"><span>My picture</span></label>
+    </div>
+    <label class="fl" title="A few concrete words: they go into every video prompt that uses this prop, and into the run sheet's Prop line"><span>Words <i>what it is: every video prompt uses them</i></span>
+      <input name="words" required maxlength="300" autocomplete="off" placeholder="matte deep violet rubber dodgeball with a thin magenta seam"></label>
+    <label class="fl only-text" title="More detail for the picture only (shape, material, colours, marks). Empty: the words."><span>Description <i>optional · more detail for the picture</i></span>
+      <textarea name="description" rows="3" maxlength="1200" placeholder="a round matte deep violet rubber ball with one thin magenta seam line running around it, a fine pebbled rubber surface"></textarea></label>
+    <label class="fl" title="The look of the picture (the style library): use the style of the characters it will play with"><span>Style <i>use the characters' style</i></span>
+      <select name="style" id="prop-style"></select></label>
+    <div class="only-image drops one">
+      <label class="drop req wide"><input name="image" type="file" accept="image/png,image/jpeg,image/webp"><span>Picture <i>the prop alone on black</i></span></label>
+    </div>
+    <details class="only-text">
+      <summary>More</summary>
+      <div class="more">
+        <label class="fl" title="Pictures to choose from (Qwen-Image, about 7 minutes each on an RTX 3070)"><span>Candidates</span>
+          <input name="candidates" type="number" min="1" max="8" value="4"></label>
+        <label class="fl" title="Qwen-Image (default; the backplates' model) or Z-Image (the character fronts' model)"><span>Model</span>
+          <select name="model"><option value="qwen-image" selected>Qwen-Image</option><option value="z-image">Z-Image</option></select></label>
+      </div>
+    </details>
+    <button class="primary" type="submit">Create</button>
+  </form>
+</template>
+
+<!-- ============================================================ Music -->
+<main id="tab-music" class="pane hidden">
+  <section class="stage">
+    <div id="song-bar" class="gallery-bar" role="toolbar" aria-label="Songs"></div>
+    <div id="song-grid" class="song-grid"></div>
+    <nav id="song-pager" class="pager" aria-label="Pages of songs"></nav>
+  </section>
+</main>
+
+<!-- ============================================================ Templates -->
+<main id="tab-templates" class="pane hidden">
+  <section class="stage">
+    <div id="tpl-bar" class="gallery-bar" role="toolbar" aria-label="Templates"></div>
+    <div id="tpl-grid" class="song-grid tpl-grid"></div>
+    <nav id="tpl-pager" class="pager" aria-label="Pages of templates"></nav>
+  </section>
+</main>
+
+<!-- ============================================================ Backgrounds -->
+<main id="tab-backgrounds" class="pane hidden">
+  <section class="stage">
+    <div id="bg-bar" class="gallery-bar" role="toolbar" aria-label="Backgrounds"></div>
+    <div id="bg-grid" class="song-grid bg-grid"></div>
+    <nav id="bg-pager" class="pager" aria-label="Pages of backgrounds"></nav>
+  </section>
+</main>
+
+<div id="new-bg" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="new-bg-title">
+  <div class="modal bg-modal">
+    <div class="modal-head"><h2 id="new-bg-title">New background</h2>
+      <button type="button" class="close" id="btn-close-bg" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button></div>
+    <form id="form-bg" class="form">
+      <!-- 1. the kind (user, 2026-10-24: "update this new ui to make it better reflect the user's options") -->
+      <div class="bg-kinds" role="radiogroup" aria-label="Kind of background">
+        <label class="bg-kind-card"><input type="radio" name="kind" value="pano" checked>
+          <span class="bk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 4c-4.4 0-8 3.6-8 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8Zm5.9 7h-3a14 14 0 0 0-1-4.6A6 6 0 0 1 17.9 11ZM12 6.1c.7 1 1.5 2.7 1.8 4.9h-3.6c.3-2.2 1.1-3.9 1.8-4.9ZM10.1 6.4A14 14 0 0 0 9.1 11h-3a6 6 0 0 1 4-4.6ZM6.1 13h3a14 14 0 0 0 1 4.6 6 6 0 0 1-4-4.6Zm5.9 4.9c-.7-1-1.5-2.7-1.8-4.9h3.6c-.3 2.2-1.1 3.9-1.8 4.9Zm1.9-.3a14 14 0 0 0 1-4.6h3a6 6 0 0 1-4 4.6Z"/></svg></span>
+          <b>360° panorama</b>
+          <span class="bk-text">A whole place all around. Works with every camera, also orbits and moving cameras.</span>
+          <span class="bk-time">GPU · the picture, then its 3D depth</span></label>
+        <label class="bg-kind-card"><input type="radio" name="kind" value="plate">
+          <span class="bk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm1 2v8.6l4-4 3 3 2-2 5 5V7H5Zm11 1.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"/></svg></span>
+          <b>Backplate</b>
+          <span class="bk-text">One sharp picture of the place for a <em>still</em> camera, made to fit one template's camera.</span>
+          <span class="bk-time">GPU · 4-9x sharper than a panorama</span></label>
+        <label class="bg-kind-card"><input type="radio" name="kind" value="setplate">
+          <span class="bk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm1 2v10h14V7H5Zm2 8 3-4 2 2.5 1.5-2L17 15H7Zm1-6h3v2H8V9Z"/></svg></span>
+          <b>Over the template's set</b>
+          <span class="bk-text">A backplate drawn over the template's own Blender set, so every object stays where the layout has it. <em>Still</em> camera only.</span>
+          <span class="bk-time">GPU · Blender, then one Qwen edit</span></label>
+        <label class="bg-kind-card"><input type="radio" name="kind" value="import">
+          <span class="bk-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M11 15V7.8L8.4 10.4 7 9l5-5 5 5-1.4 1.4L13 7.8V15h-2Zm-6 2h14v2H5v-2Z"/></svg></span>
+          <b>My picture</b>
+          <span class="bk-text">Use your own picture of the place as a backplate for a still camera.</span>
+          <span class="bk-time">instant</span></label>
+      </div>
+
+      <!-- 2. the fields of the chosen kind -->
+      <label class="fl" data-bg-kind="plate setplate"><span id="bg-shot-label">Template camera <i>the backplate is drawn for this template's still camera (height, angle, horizon)</i></span>
+        <select name="shot" id="bg-shot-select"></select></label>
+      <div class="fl bg-drop" data-bg-kind="import">
+        <span>Picture of the place</span>
+        <label class="bg-file"><input name="image" type="file" accept="image/png,image/jpeg,image/webp">
+          <img id="bg-file-preview" class="hidden" alt="The chosen picture">
+          <span id="bg-file-hint">Choose a PNG, JPG or WEBP picture · it is fitted to the video's frame</span></label>
+      </div>
+      <label class="fl"><span id="bg-scene-label">The place</span>
+        <textarea name="scene" rows="3" placeholder="A quiet harbour at dawn with fishing boats, stacked crates and gulls on the poles, soft pink light"></textarea></label>
+      <label class="fl" data-bg-kind="pano plate setplate"><span>Look <i>optional · style words, for example your video's style</i></span>
+        <input name="style" placeholder="stylized 3D animation, soft even daylight" autocomplete="off"></label>
+      <label class="fl" data-bg-kind="pano plate setplate" title="A style from the Styles tab: it fills the look words and the background records the style"><span>Style <i>optional · from the style library: fills the look words</i></span>
+        <select name="style_preset" class="style-preset-select" id="bg-style-preset"></select></label>
+      <details class="bg-more">
+        <summary>More options</summary>
+        <div class="bg-more-grid">
+          <label class="fl" title="Letters, digits, - or _"><span>Name <i>optional · made from the text when empty</i></span>
+            <input name="name" pattern="[A-Za-z0-9][A-Za-z0-9_-]{0,63}" autocomplete="off" spellcheck="false"></label>
+          <label class="fl" data-bg-kind="pano plate setplate" title="The same seed with the same text gives the same picture"><span>Seed <i>optional</i></span>
+            <input name="seed" type="number" min="0"></label>
+          <label class="check bg-depth" data-bg-kind="pano"><input name="depth" type="checkbox" checked>
+            <span>Make the 3D depth too <i>the videos' 3D ground needs it; it can also be made later</i></span></label>
+        </div>
+      </details>
+      <div class="btnrow"><span class="muted small" id="bg-submit-note"></span><button class="primary" type="submit">Make panorama</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="bg-style" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="bg-style-title">
+  <div class="modal">
+    <div class="modal-head"><h2 id="bg-style-title">Redraw in a style <span class="muted" id="bg-style-name"></span></h2>
+      <button type="button" class="close" id="btn-close-bgstyle" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button></div>
+    <form id="form-bgstyle" class="form">
+      <p class="muted small">LTX-2.5 redraws the panorama with a style LoRA and saves it as a NEW background; the original stays.
+        A low "keep" changes more (and can invent details).</p>
+      <label class="fl"><span>Style LoRA</span><select name="style_lora" id="bg-style-lora"></select></label>
+      <label class="fl"><span>Style words <i>the LoRA's trigger word and look</i></span>
+        <input name="style" placeholder="3dsrx, stylized cinematic 3D animation" autocomplete="off"></label>
+      <div class="song-params">
+        <label title="About this part of the panorama's structure stays (0 - 0.95)"><span>Keep</span>
+          <input name="keep" type="number" min="0" max="0.95" step="0.05" value="0.3"></label>
+        <label title="The LoRA strength"><span>Strength</span>
+          <input name="strength" type="number" min="0" max="2" step="0.1" value="1.0"></label>
+      </div>
+      <div class="btnrow"><button class="primary" type="submit">Redraw</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================ Video -->
+<main id="tab-video" class="pane hidden">
+  <section class="stage">
+    <div id="run-bar" class="gallery-bar" role="toolbar" aria-label="Videos"></div>
+    <div id="run-grid" class="gallery"></div>
+    <nav id="run-pager" class="pager" aria-label="Pages of videos"></nav>
+  </section>
+</main>
+
+<footer class="statusbar">
+  <button id="btn-queue" class="sb-queue" title="Queue" aria-haspopup="true">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor"
+      d="M3 5h2v2H3V5zm4 0h14v2H7V5zM3 11h2v2H3v-2zm4 0h14v2H7v-2zm-4 6h2v2H3v-2zm4 0h14v2H7v-2z"/></svg>
+    <span id="queue-text">Idle</span><span id="queue-count" class="qcount hidden"></span>
+  </button>
+  <div class="sb-fill"></div>
+  <div id="meters" class="sb-meters" aria-label="Resource use"></div>
+  <button id="wf-adv-chip" class="wf-adv-chip wf-adv-only" title="Advanced mode is on (Ctrl+Shift+G). Click to change it in Settings.">Advanced</button>
+  <button id="health" class="health" title="checking…" aria-label="Health checks"><span class="dot"></span></button>
+</footer>
+<!-- ============================================================ Workflows (advanced mode; cinestudio/web/js/workflows.js) -->
+<main id="tab-workflows" class="pane hidden">
+  <div class="wf-layout">
+    <aside class="wf-side" aria-label="Graphs">
+      <div class="wf-side-head"><h1>Workflows</h1><span class="wf-badge-adv">Advanced</span></div>
+      <p class="sub">The ComfyUI graphs behind each feature. Read-only: a change here changes nothing.</p>
+      <input id="wf-filter" type="search" placeholder="Filter the graphs" aria-label="Filter the graphs">
+      <div id="wf-list" class="wf-list"><div class="sub">Reading the graphs…</div></div>
+    </aside>
+    <section class="wf-main">
+      <div class="wf-bar" role="toolbar" aria-label="Graph">
+        <div id="wf-title" class="wf-title"></div>
+        <input id="wf-search" type="search" placeholder="Find a node (class or title), Enter = next" aria-label="Find a node">
+        <span id="wf-hits" class="sub"></span>
+        <div class="wf-zoom">
+          <button type="button" id="wf-zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
+          <span id="wf-zoom-v">100%</span>
+          <button type="button" id="wf-zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+          <button type="button" id="wf-fit" title="Show the whole graph">Fit</button>
+        </div>
+        <button type="button" id="wf-download" title="Save the graph as a JSON file (ComfyUI's API format): drag it onto ComfyUI to open it">Download for ComfyUI</button>
+        <button type="button" id="wf-copy" title="Copy the graph's JSON">Copy JSON</button>
+      </div>
+      <div id="wf-actions" class="wf-actions hidden" role="toolbar" aria-label="Graph copies"></div>
+      <div class="wf-canvas">
+        <svg id="wf-svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The node graph"></svg>
+        <div id="wf-empty" class="wf-empty hidden">This graph has no nodes.</div>
+        <div id="wf-legend" class="wf-legend"></div>
+        <aside id="wf-panel" class="wf-panel hidden" aria-label="Node"></aside>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- ============================================================ Settings -->
+<main id="tab-settings" class="pane hidden">
+  <div class="set-layout">
+    <nav class="set-nav" aria-label="Settings sections">
+      <h1>Settings</h1>
+      <button type="button" data-sec="setup" class="on">Setup <span class="nav-count" id="nav-setup-count"></span></button>
+      <button type="button" data-sec="models">Models</button>
+      <button type="button" data-sec="tokens">Access tokens</button>
+      <button type="button" data-sec="engine">Engine</button>
+      <button type="button" data-sec="graphics" id="nav-graphics">Graphics per app</button>
+      <button type="button" data-sec="advanced">Advanced</button>
+    </nav>
+    <div class="set-main">
+      <section class="set-sec" data-sec="setup">
+        <header><h2>Setup</h2><p>What cinestudio needs before it can make videos. Each step can be changed later.</p></header>
+        <div id="setup-checklist" class="muted">Reading the setup…</div>
+      </section>
+      <section class="set-sec hidden" data-sec="models">
+        <header><h2>Models</h2><p>Choose the tier for your graphics card. A larger tier runs the models at higher
+          precision. The image models are the full models in every tier; the layout video (a Blender shot with your
+          character) uses the distilled LTX-2.5 in both tiers. Videos that are made or waiting keep their models.</p></header>
+        <div id="models-body" class="muted">Reading the models…</div>
+      </section>
+      <section class="set-sec hidden" data-sec="tokens">
+        <header><h2>Access tokens</h2><p>These tokens are optional, but <b>highly recommended</b>: some model
+          downloads need them (Hugging Face files that need an account, Civitai files whose creator requires a login).
+          They are saved only on this computer and are never shown again after you save them.</p></header>
+        <div id="tokens-body" class="muted">Reading the tokens…</div>
+      </section>
+      <section class="set-sec hidden" data-sec="engine">
+        <header><h2>Engine</h2><p>Where the videos are made.</p></header>
+        <div id="runon-body"></div>
+        <div class="set-group"><div class="set-group-title">ComfyUI</div><div id="engine-body" class="muted">Checking ComfyUI…</div></div>
+      </section>
+      <section class="set-sec hidden" data-sec="graphics">
+        <header><h2>Graphics per app</h2><p>Apps on the integrated graphics leave more GPU memory for cinestudio.
+          A Windows setting: restart an app after a change.</p></header>
+        <div id="gpu-body" class="muted">Reading the apps…</div>
+      </section>
+      <section class="set-sec hidden" data-sec="advanced">
+        <header><h2>Advanced</h2><p>Tools for looking under the hood. The normal screens do not need them.</p></header>
+        <div class="set-row">
+          <div class="lbl"><b>Show the workflow graphs</b>
+            <span>Adds a Workflows button above Settings and "graph" links in each video's details: the ComfyUI node
+              graphs behind each feature, and the exact graph each video job sent. You can download a graph and open
+              it in ComfyUI. Shortcut: Ctrl+Shift+G.</span></div>
+          <div class="ctl"><label class="wf-switch"><input type="checkbox" id="wf-adv-toggle"> <span>Advanced mode</span></label></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<div id="queue-pop" class="qpop hidden" role="dialog" aria-label="Queue"></div>
+<div id="new-video" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="new-video-title">
+  <div class="modal">
+    <div class="modal-head"><h2 id="new-video-title">New video</h2>
+      <button type="button" class="close" id="btn-close-new" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button></div>
+    <form id="form-video" class="form vform">
+      <div class="vcols">
+        <div class="vcol">
+          <fieldset class="vsec">
+            <legend><b>1</b> Shot <span id="shot-check"></span></legend>
+            <select name="blend" id="shot-select" title="The template: the Blender shot (camera and motion) or a template video"></select>
+            <input name="blend_path" class="hidden" placeholder="Full path of your .blend file, for example D:\shots\scene.blend">
+            <div id="shot-preview" class="shot-preview"></div>
+          </fieldset>
+          <fieldset class="vsec">
+            <legend><b>2</b> Characters <span class="slot-chip-wrap" id="slot-chip"></span></legend>
+            <div class="slots" id="slots">
+              <div class="slot-list" id="slot-list">
+                <!-- one row per character of the template (its Mannequin, Mannequin2 ... layers); row 1 holds the
+                     form's "character" select, the others are added by video.js fillCharSelect -->
+                <label class="fl slot" data-slot="1" title="The character that plays this figure of the template (only ready characters: front, views, sheet and mannequin body)">
+                  <span class="slot-head"><b class="slot-num">1</b><span class="slot-label">Character</span></span>
+                  <select name="character" id="video-char-select" class="slot-char" data-slot="1"></select>
+                  <i class="hint slot-kit"></i></label>
+              </div>
+              <figure class="slot-poster hidden" id="slot-poster"></figure>
+            </div>
+            <div class="slot-msg hidden" id="slot-msg" role="status"></div>
+            <div class="prop-slots hidden" id="prop-slots">
+              <div class="prop-head" title="The template's moving objects (its Props layer). Their words go into every clip's text; write your own words to make them other objects (empty = the template's words). The Blender shapes stay: keep words that fit the shape and size. Picture…: a picture of the object (at most 2) goes into a prop panel of the run's sheet.">Objects in this template</div>
+              <div id="prop-rows"></div>
+            </div>
+            <label class="fl" data-layout-only title="Layout-To-Render: the character's look in words for the look image, instead of the character's saved description. Use it when the description and the sheet disagree (for example a garment length): the video copies the look image exactly."><span>Look text <i>optional: the costume in exact words</i></span>
+              <textarea name="look_text" rows="2" maxlength="900" placeholder="empty = the character's description"></textarea></label>
+            <div class="vrow kit-row">
+              <label class="fl" data-blend-only title="Each character's stand-in parts (proxy kit: clay mask, hair ...) put on its own mannequin in the run's copy of the shot, so the layout already has the characters' outlines. Each slot above says whether its character has them."><span>Stand-in parts</span>
+                <select name="proxy">
+                  <option value="">Each character's own (when it has them)</option>
+                  <option value="off">None: bare mannequins</option>
+                </select></label>
+              <label class="fl" title="How strongly the video follows the character sheet (Ingredients IC-LoRA). Default 1.0 (the LTX-2.5 file is pre-scaled)."><span>Sheet guide</span>
+                <input name="ingredients_strength" type="number" step="0.05" min="0" max="2" placeholder="1.0"></label>
+            </div>
+          </fieldset>
+        </div>
+        <div class="vcol">
+          <fieldset class="vsec">
+            <legend><b>3</b> Scene and action <i class="vt-hint" id="video-text-hint"></i></legend>
+            <textarea name="video" rows="6" required
+              placeholder="What happens: the character slowly raises its right hand and waves, then lowers it. Write the place, the light and the action; a template already brings the camera move."></textarea>
+            <details class="vclips" id="clip-texts">
+              <summary title="A long shot is made in clips of about 5 s (clip 1 = 0-5 s, clip 2 = 4-9 s, clip 3 = 8-13 s ...). Each clip gets its own prompt: the text above (who, place, light, look: in every clip) + its own actions here (only what that clip's frames show).">Text per clip <i>each clip's own actions: only what its frames show</i></summary>
+              <div class="ct-context sub hidden" id="clip-context"></div>
+              <div id="clip-text-rows"></div>
+              <div class="ct-warn hidden" id="clip-text-warn" role="status"></div>
+              <button type="button" class="linkbtn" id="btn-add-clip-text">+ Add a clip's text</button>
+            </details>
+            <label class="fl" title="A style from the Styles tab: it fills the Style text (and brings its video LoRA when no LoRA is chosen). Change the text for your own words."><span>Library style <i>fills the Style text</i></span>
+              <select name="style_preset" class="style-preset-select" id="video-style-preset"></select>
+              <span class="hint" id="video-style-hint"></span></label>
+            <label class="fl style-field" title="The look of the video, in words. It goes into every clip's prompt. It is filled from the character's own style when you choose a character (edit it freely)."><span>Style <i>the look, in words (from the character)</i></span>
+              <textarea name="style" rows="2" required></textarea></label>
+            <div class="vrow">
+              <label class="fl" title="A style LoRA from ComfyUI models/loras (for example the 3D animation LoRA; give its trigger word in the style text)"><span>Style LoRA</span>
+                <select name="style_lora" class="lora-select"></select></label>
+              <label class="fl" title="Strength of the style LoRA (the 3D LoRA: 0.4 in our tests)"><span>LoRA strength</span>
+                <input name="style_lora_strength" type="number" step="0.05" min="0" max="1.5" placeholder="0.8"></label>
+            </div>
+          </fieldset>
+          <fieldset class="vsec bg-block" id="bg-block">
+            <legend><b>4</b> Background</legend>
+            <select name="background" id="bg-select" title="Blender shots: a 360° panorama round the shot (every camera), or a backplate (one sharp picture for a still camera)">
+              <option value="">The template's own set</option>
+              <option value="text">A new 360° place from the text</option>
+              <option value="plate" title="For a still camera: one sharp picture at the frame's shape instead of a 360° panorama (the camera sees only ~350 px of a panorama)">One picture of the place (still camera, sharper)</option>
+              <option value="look-scene" title="No panorama or backplate: a second picture edit puts the place into the look image (the grey Blender room becomes the place). Keyframe looks are off.">No background picture: the place in the look image</option>
+            </select>
+            <input name="background_text" id="bg-text" class="hidden" maxlength="600"
+              placeholder="The place, e.g. a neon-lit rooftop in the rain at night (empty = the video text)">
+            <label class="fl hidden" id="bg-ground-field" title="How the 360° place stands round the shot in Blender. 3D depth (default): the panorama's floor, walls and objects at their measured distance (MoGe-2). Dome: one round wall (the old way)."><span>Ground</span>
+              <select name="background_ground">
+                <option value="">3D depth (default)</option>
+                <option value="dome">Dome (one round wall)</option>
+              </select></label>
+          </fieldset>
+          <fieldset class="vsec">
+            <legend><b>5</b> Sound</legend>
+            <select name="sound" title="The song or sound placed in the Blender shot replaces LTX's own sound, in sync with the shot's frames. Without it, LTX makes the sound.">
+              <option value="auto">The template's sound (LTX's own if it has none)</option>
+              <option value="ltx">LTX makes its own sound</option>
+            </select>
+            <label class="fl" title="The words for LTX's sound (the Layout-To-Render LoRA makes silence without them). Be concrete: what can be heard, and what not."><span>Sound words <i>empty = a breeze, the place, cloth and steps; no music</i></span>
+              <input name="sound_text" maxlength="400" placeholder="e.g. rain on the roof, a far siren, footsteps on wet concrete; no music, no one speaks"></label>
+            <div class="vrow" data-blend-only>
+              <label class="fl" title="A finished song from the Music tab becomes the video's sound, from the second below on the first frame. It replaces the template's sound and LTX's sound."><span>Song <i>from the Music tab</i></span>
+                <select name="song" id="song-select"><option value="">No song</option></select><i class="hint" id="song-hint"></i></label>
+              <label class="fl hidden" id="song-start-field" title="The song's second that plays on the video's first frame"><span>Starts at second</span>
+                <input name="song_start" type="number" min="0" step="0.1" placeholder="0"></label>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+      <fieldset class="vsec vout">
+        <legend><b>6</b> Output</legend>
+        <div class="seg" role="radiogroup" title="Quality">
+          <label title="768×448, stage 1 only: motion, camera and design (about half the time; use it for tests)"><input type="radio" name="quality" value="preview" checked><span>Preview</span></label>
+          <label title="1536×896, two-stage upscale (for a chosen demo)"><input type="radio" name="quality" value="final"><span>Final</span></label>
+        </div>
+        <label class="fl" data-layout-only title="Distilled: LTX-2.5 distilled, 8 steps (the tested default). Full: the LTX-2.5 dev model, 30 steps with guidance and the negative prompt: about 8x slower in preview (about 20 min a clip on an RTX 3070) and 5x at final; not yet A/B-tested against distilled. Needs the dev model file (part of every tier's download: Settings > Models)."><span>Video model</span>
+          <select name="video_model" id="video-model-select">
+            <option value="distilled">Distilled · fast</option>
+            <option value="full">Full · higher quality, slower</option>
+          </select></label>
+        <label class="fl" title="Random seed: the same seed with the same settings gives the same video"><span>Seed</span>
+          <input name="seed" type="number" value="333"></label>
+        <label class="fl vnote" title="What this run tests (shown with the run)"><span>Note <i>optional</i></span>
+          <input name="note" maxlength="500" placeholder="what this run tests"></label>
+        <label class="check vgate" data-layout-only title="The run stops after clip 1. Check it in the player's Clips section, make it again if needed (Retake), then make the next clip. Best for long shots."><input type="checkbox" name="through_clip" value="1">
+          <span>Stop after each clip so I can check it</span></label>
+      </fieldset>
+      <details class="vsec-more">
+        <summary>Advanced</summary>
+        <div class="more adv-grid">
+          <label data-layout-only title="Layout-To-Render: more look images inside a clip where the body turns away (made from the character's views and sheet). Off = only the first look image."><span>Keyframe looks</span>
+            <select name="look_keyframes">
+              <option value="">Automatic (default)</option>
+              <option value="off">Off</option>
+            </select></label>
+          <label data-layout-only title="Long shots: each clip starts with the end of the clip before's sound, so the sound goes on across the joins (default). Off: every clip makes its own sound (the sound can jump at a join)."><span>Sound at clip joins</span>
+            <select name="audio_relay">
+              <option value="">Carried on (default)</option>
+              <option value="off">Each clip makes its own</option>
+            </select></label>
+          <!-- "Say which way the character faces" left the app (user, 2026-10-25; unproven on layout runs): CLI/MCP describe_facing -->
+          <label data-v2v-only title="How the skeleton is drawn. Chibi: thick and bright, kept the big head and short body of a chibi character. Standard: as the DWPose node draws it, for normal human proportions."><span>Body type</span>
+            <select name="body_type">
+              <option value="">Automatic (default)</option>
+              <option value="chibi">Chibi (big head, short body)</option>
+              <option value="standard">Standard human proportions</option>
+            </select></label>
+          <label data-v2v-only title="How strongly the video follows the skeleton (0 = no skeleton guide). Default 1."><span>Control strength</span>
+            <input name="control_strength" type="number" step="0.05" min="0" max="2" placeholder="1"></label>
+          <label data-v2v-only title="Start from the Blender render (video-to-video). Lower keeps more of the render. Empty = automatic: 0.979 for Blender shots, 0.985 for dance and text templates."><span>Start noise</span>
+            <input name="source_denoise" type="number" step="0.001" min="0.5" max="1" placeholder="auto"></label>
+          <label data-full-model title="Sampling steps of the full LTX-2.5 model (stage 1). Default 30. The distilled model has a fixed 8-step schedule."><span>Steps</span>
+            <input name="steps" type="number" step="1" min="8" max="60" placeholder="30"></label>
+          <label data-full-model title="How strongly the video follows the text (the video CFG of the full model). Default 3."><span>Guidance</span>
+            <input name="guidance" type="number" step="0.5" min="1" max="10" placeholder="3"></label>
+          <label data-v2v-only class="wide" title="Optional: your own control video (for example an SDPose control). It replaces the skeleton drawn from the shot."><span>Control video file (optional)</span>
+            <input name="control_video" placeholder="D:\path\control.mp4" spellcheck="false"></label>
+          <label data-full-model class="wide" title="What must not be in the video. Only the full model uses it (guidance above 1); the distilled model ignores it."><span>Negative prompt <i>empty = the default</i></span>
+            <textarea name="negative" rows="2" maxlength="600" placeholder="worst quality, inconsistent motion, blurry, jittery, distorted"></textarea></label>
+        </div>
+      </details>
+      <div class="vfoot"><button class="primary" type="submit">Generate</button></div>
+    </form>
+  </div>
+</div>
+<div id="new-song" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="new-song-title">
+  <div class="modal">
+    <div class="modal-head"><h2 id="new-song-title">New song <span class="muted">ACE-Step 1.5 · open weights, MIT</span></h2>
+      <button type="button" class="close" id="btn-close-song" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button></div>
+    <form id="form-song" class="form">
+      <label class="fl"><span>Name</span>
+        <input name="name" required pattern="[A-Za-z0-9][A-Za-z0-9_-]{0,63}" placeholder="funk_groove"
+          title="Letters, digits, - or _" autocomplete="off" spellcheck="false"></label>
+      <label class="fl tags-l"><span>Style</span>
+        <textarea name="tags" rows="5" required
+          placeholder="Genre, instruments, mood and vocals, for example: funk, slap bass, wah-wah guitar, brass stabs, tight drums, handclaps on 2 and 4, group chant, catchy hook, energetic. No artist or song names."></textarea></label>
+      <label class="fl lyrics-l"><span>Lyrics <i>[Verse], [Chorus]… or [instrumental]</i></span>
+        <textarea name="lyrics" rows="9" spellcheck="false">[instrumental]</textarea></label>
+      <div class="song-params">
+        <label title="Tempo in beats per minute (the measured tempo can differ a little)"><span>BPM</span>
+          <input name="bpm" type="number" min="30" max="300" value="120"></label>
+        <label title="Length of the song"><span>Seconds</span>
+          <input name="seconds" type="number" min="1" max="600" step="1" value="30"></label>
+        <label><span>Key</span><select name="key" id="song-key"></select></label>
+        <label title="The same seed with the same settings gives the same song"><span>Seed</span>
+          <input name="seed" type="number" value="31"></label>
+        <label title="Language of the lyrics"><span>Language</span>
+          <select name="language">
+            <option value="en">English</option><option value="ja">Japanese</option><option value="ko">Korean</option>
+            <option value="zh">Chinese</option><option value="es">Spanish</option><option value="fr">French</option>
+            <option value="de">German</option><option value="pt">Portuguese</option><option value="it">Italian</option>
+            <option value="ru">Russian</option><option value="unknown">Other</option>
+          </select></label>
+      </div>
+      <button class="primary" type="submit">Generate</button>
+    </form>
+  </div>
+</div>
+<div id="figure-sel" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="figure-sel-title">
+  <div class="modal fig-modal">
+    <div class="modal-head"><h2 id="figure-sel-title">Select the figure <span class="muted" id="fig-name"></span></h2>
+      <button type="button" class="close" id="btn-close-figure" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button></div>
+    <div class="fig-top">
+      <div class="seg fig-view" role="radiogroup" aria-label="View">
+        <label><input type="radio" name="figview" value="pick" checked><span>Pick points</span></label>
+        <label><input type="radio" name="figview" value="result"><span>Tracked mask</span></label>
+      </div>
+      <div class="seg fig-kind" role="radiogroup" aria-label="Kind of click">
+        <label title="A click on the figure: this is the one to replace"><input type="radio" name="figkind" value="pos" checked><span>+ Include</span></label>
+        <label title="A click on something that is NOT the figure (Shift+click does the same)"><input type="radio" name="figkind" value="neg"><span>− Exclude</span></label>
+      </div>
+    </div>
+    <div class="fig-stage">
+      <div class="fig-frame" id="fig-frame">
+        <video disablepictureinpicture id="fig-video" muted playsinline preload="auto"></video>
+        <svg id="fig-marks" aria-hidden="true"></svg>
+      </div>
+      <video disablepictureinpicture id="fig-overlay" class="hidden" muted playsinline preload="auto"></video>
+    </div>
+    <div class="fig-scrub"><button type="button" id="fig-play" title="Play / pause">▶</button>
+      <input type="range" id="fig-slider" min="0" max="0" value="0" aria-label="Frame"><span id="fig-fno">frame 0</span></div>
+    <canvas id="fig-timeline" height="34" title="Mask area per frame; red = check this frame (click to go there)"></canvas>
+    <div class="sub fig-help">Click the figure to replace (green). Shift+click, or choose Exclude, for something that is not it (red).
+      Grey rings are the automatic points from the pose detector. After tracking, red ticks on the strip mark frames to check:
+      go there, add a click and press Track again.</div>
+    <div id="fig-points" class="fig-points"></div>
+    <div class="fig-actions"><span id="fig-status" class="sub"></span>
+      <button type="button" id="fig-clear">Clear my clicks</button>
+      <button type="button" id="fig-track" class="primary">Track the figure</button></div>
+  </div>
+</div>
+<div id="new-template" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="new-template-title">
+  <div class="modal">
+    <div class="modal-head"><h2 id="new-template-title">New template <span class="muted" id="tpl-subtitle">the mannequin copies the motion of a dance video (a Blender shot)</span></h2>
+      <button type="button" class="close" id="btn-close-template" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button></div>
+    <form id="form-template" class="form">
+      <div class="tpl-mode seg" role="radiogroup" aria-label="Kind of template">
+        <label><input type="radio" name="mode" value="video" checked><span>From a video</span></label>
+        <label><input type="radio" name="mode" value="import"><span>Import</span></label>
+      </div>
+      <label class="fl"><span>Name</span>
+        <input name="name" required pattern="[A-Za-z0-9][A-Za-z0-9_-]{0,63}" placeholder="shuffle_loop"
+          title="Letters, digits, - or _" autocomplete="off" spellcheck="false"></label>
+      <fieldset class="tpl-fs tpl-mode-video">
+        <label class="fl"><span>Video <i>people dancing, best facing a still camera</i></span>
+          <input type="file" name="vfile" accept=".mp4,.mov,.mkv,.webm,.m4v,.avi,video/*" required></label>
+        <label class="fl" title="One person: the whole frame is read as ONE dancer. More people / Pick: SAM 3 finds and follows every person; they become Mannequin (the picture's left one: the run's Character 1), Mannequin2, ... left to right at their places from the video (a video takes up to 4 characters)"><span>People</span>
+          <select name="vpeople"><option value="1">One person</option><option value="2">Two people (the two most visible)</option><option value="3">Three people (the three most visible)</option><option value="all">All (up to 4)</option><option value="pick">Pick after the scan (who is who)</option></select></label>
+        <div class="tpl-params">
+          <label title="The video's second where the template starts"><span>Start second</span>
+            <input name="vstart" type="number" min="0" step="0.1" value="0"></label>
+          <label title="The template's length (at most 30 s; longer shots become more clips in the run)"><span>Seconds</span>
+            <input name="vseconds" type="number" min="2" max="30" step="0.5" value="10"></label>
+          <label title="The video's own sound keeps the dance on its beat, but it is someone else's recording: the template is then private (not for a contest submission)"><span>Sound</span>
+            <select name="vsound"><option value="video">The video's sound (private)</option><option value="none">No sound</option></select></label>
+        </div>
+        <label class="fl"><span>Description <i>optional</i></span>
+          <textarea name="vdesc" rows="2" maxlength="600" placeholder="A fast folk dance with sideways dodges and a clap above the head"></textarea></label>
+        <div class="sub">SAM 3D Body reads the dancer's 3D motion (one GPU job, about 2 minutes for 10 s), then Blender keys
+          the mannequin with it: a still front camera and a plain floor. Choose a background (a backplate or a 360° panorama) in the Video tab.</div>
+      </fieldset>
+      <fieldset class="tpl-fs tpl-mode-import hidden" disabled>
+        <label class="fl"><span>File <i>a Blender shot (.blend) or a video (.mp4, .mov, .mkv, .webm)</i></span>
+          <input type="file" name="file" accept=".blend,.mp4,.mov,.mkv,.webm" required></label>
+        <label class="fl"><span>Description <i>optional: characters, action, camera, length</i></span>
+          <textarea name="description" rows="2" maxlength="600" placeholder="One mannequin waves while the camera orbits once"></textarea></label>
+        <p class="hint-box">A <b>.blend</b> needs a mannequin (collection <code>Mannequin</code> with the rig
+          <code>MannequinRig</code>) and a camera: your character replaces the mannequin. A <b>video</b> needs one person
+          (a stand-in) in an empty place: your character replaces that person. Sounds in the .blend are kept.</p>
+      </fieldset>
+      <fieldset class="tpl-fs tpl-mode-dance hidden" disabled><!-- "Dance on a song" removed from the app (user, 2026-10-25); CLI: shot make-dance -->
+      <label class="fl"><span>Song <i>from the Music tab</i></span>
+        <select name="song" id="tpl-song" required></select></label>
+      <div class="fl tpl-routines-l"><span>Dance <i>click the routines in order · each is one 8-count</i></span>
+        <div class="tpl-picked" id="tpl-picked" aria-live="polite"></div>
+        <div class="tpl-palette" id="tpl-palette"></div>
+        <div class="tpl-tools">
+          <label class="check" title="The next routine you add is mirrored (left and right swapped)">
+            <input type="checkbox" id="tpl-mirror"> Mirrored</label>
+          <button type="button" id="tpl-undo" title="Remove the last routine">Remove last</button>
+          <button type="button" id="tpl-clear">Clear</button>
+        </div>
+        <input type="hidden" name="routines" value="S1,S2"></div>
+      <div class="tpl-params">
+        <label class="check" title="The last frame repeats the first: the video plays again without a cut">
+          <input type="checkbox" name="loop" checked> Loop</label>
+        <label class="tpl-secs" title="The loop takes the nearest 8, 16 or 32 beats of the song"><span>Seconds</span>
+          <input name="seconds" type="number" min="2" max="60" step="0.5" value="10"></label>
+        <label class="tpl-start hidden" title="The song's second that plays on frame 1 (empty: just before its first downbeat)">
+          <span>Start second</span><input name="start" type="number" min="0" step="0.01" placeholder="auto"></label>
+        <label class="check" title="The template set with night light"><input type="checkbox" name="night"> Night light</label>
+      </div>
+      <div class="sub" id="tpl-hint"></div>
+      </fieldset>
+      <button class="primary" type="submit">Generate</button>
+    </form>
+  </div>
+</div>
+<div id="tpl-layers" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tpl-layers-title">
+  <div class="modal">
+    <div class="modal-head"><h2 id="tpl-layers-title">Layers <span class="muted" id="tpl-layers-name"></span></h2>
+      <button type="button" class="close" id="btn-close-layers" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button></div>
+    <form id="form-layers" class="form">
+      <p class="muted small">A template has three layers (Blender collections): the characters' mannequins, <b>Props</b> (objects
+        that move or that a character touches) and <b>Set</b> (the static place). Their words go into the video text
+        ("In the scene: ...") and into a backplate drawn over the set.</p>
+      <div id="layers-scan" class="sc-facts"></div>
+      <label class="fl"><span>The set stands for <i>the place, for example: a school gym with a ball cart at the far wall</i></span>
+        <textarea name="set" rows="2" maxlength="600"></textarea></label>
+      <div class="fl"><span>Props <i>one line per prop, or a pattern such as Ball_* for several: the same concrete words everywhere</i></span>
+        <div id="layers-props"></div>
+        <div class="layers-prop-names" id="layers-prop-names"></div></div>
+      <ul class="layers-warn" id="layers-warn"></ul>
+      <div class="btnrow"><button type="button" id="btn-layers-rescan" title="Read the layers from the .blend again (Blender, a few seconds)">Read the .blend again</button>
+        <span class="grow"></span><button class="primary" type="submit">Save</button></div>
+    </form>
+  </div>
+</div>
+<div id="tpl-check" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="tpl-check-title">
+  <div class="modal">
+    <div class="modal-head"><h2 id="tpl-check-title">Template check <span class="muted" id="tpl-check-name"></span></h2>
+      <button type="button" class="close" id="btn-close-check" title="Close (Esc)" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+      </button></div>
+    <div class="form">
+      <p class="muted small">The template rules (<code>shot check</code>): read from the .blend by Blender in the background
+        (no render, no GPU job). Errors break a video; warnings often mislead it; fix them in Blender and check again.</p>
+      <div id="check-sum" class="sc-facts"></div>
+      <ul class="check-list" id="check-list"></ul>
+      <div class="btnrow"><span class="muted small" id="check-when"></span><span class="grow"></span>
+        <button type="button" id="btn-check-again" title="Read the .blend again (Blender, a few seconds)">Check again</button></div>
+    </div>
+  </div>
+</div>
+<div id="player" class="overlay hidden" role="dialog" aria-modal="true"></div>
+<div id="toast" class="toast hidden"></div>
+<script src="/static/js/core.js"></script>
+<script src="/static/js/characters.js"></script>
+<script src="/static/js/video.js"></script>
+<script src="/static/js/music.js"></script>
+<script src="/static/js/templates.js"></script>
+<script src="/static/js/figure.js"></script>
+<script src="/static/js/backgrounds.js"></script>
+<script src="/static/js/settings.js"></script>
+<script src="/static/js/styles.js"></script>
+<script src="/static/js/props.js"></script>
+<script src="/static/js/workflows.js"></script>
+<script src="/static/js/main.js"></script>
+</body>
+</html>

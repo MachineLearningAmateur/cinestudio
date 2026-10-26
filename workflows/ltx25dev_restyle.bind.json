@@ -1,0 +1,167 @@
+{
+ "_about": "LTX-2.5 FULL model (dev, non-distilled). Binding map for workflows/ltx25dev_restyle_api.json: the reference sheet redrawn in the style of the user's LoRA (image-to-image on a 9-frame still clip). keep_strength = how much of the original sheet stays (1 = no change).",
+ "profile": "ltx25dev",
+ "capabilities": {
+  "frames_rule": "8n+1",
+  "size_multiple": 64,
+  "default_fps": 24,
+  "model_family": "ltx25",
+  "output": "image",
+  "recipe": "full"
+ },
+ "inputs": {
+  "reference": [
+   [
+    "sheet_load",
+    "image"
+   ]
+  ],
+  "prompt": [
+   [
+    "pos",
+    "text"
+   ]
+  ],
+  "negative": [
+   [
+    "neg",
+    "text"
+   ]
+  ],
+  "width": [
+   [
+    "lat",
+    "width"
+   ],
+   [
+    "sheet_fit",
+    "target_width"
+   ]
+  ],
+  "height": [
+   [
+    "lat",
+    "height"
+   ],
+   [
+    "sheet_fit",
+    "target_height"
+   ]
+  ],
+  "seed": [
+   [
+    "noise1",
+    "noise_seed"
+   ]
+  ],
+  "steps": [
+   [
+    "sigmas1",
+    "steps"
+   ]
+  ],
+  "keep_strength": [
+   [
+    "i2v",
+    "strength"
+   ]
+  ],
+  "style_lora": [
+   [
+    "lora_style",
+    "lora_name"
+   ]
+  ],
+  "style_lora_strength": [
+   [
+    "lora_style",
+    "strength_model"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save_first",
+    "filename_prefix"
+   ]
+  ],
+  "output_prefix_last": [
+   [
+    "save_last",
+    "filename_prefix"
+   ]
+  ],
+  "video_cfg": [
+   [
+    "gpv1",
+    "cfg"
+   ]
+  ],
+  "audio_cfg": [
+   [
+    "gpa1",
+    "cfg"
+   ]
+  ],
+  "rescale": [
+   [
+    "gpv1",
+    "rescale"
+   ],
+   [
+    "gpa1",
+    "rescale"
+   ]
+  ],
+  "stg_scale": [
+   [
+    "gpv1",
+    "stg"
+   ],
+   [
+    "gpa1",
+    "stg"
+   ]
+  ],
+  "modality_scale": [
+   [
+    "gpv1",
+    "modality_scale"
+   ],
+   [
+    "gpa1",
+    "modality_scale"
+   ]
+  ]
+ },
+ "outputs": {
+  "video": "save_first",
+  "image": "save_first",
+  "image_last": "save_last"
+ },
+ "models": {
+  "ltx25_model": [
+   [
+    "ckpt",
+    "unet_name"
+   ]
+  ],
+  "ltx25_text": [
+   [
+    "te",
+    "clip_name"
+   ]
+  ],
+  "ltx25_vae": [
+   [
+    "vvae",
+    "vae_name"
+   ]
+  ],
+  "ltx25_audio_vae": [
+   [
+    "audio_vae",
+    "vae_name"
+   ]
+  ]
+ }
+}

@@ -1,0 +1,124 @@
+{
+ "_about": "3D body motion of SEVERAL people from a video (ComfyUI core nodes). SAM 3.1 (Meta, SAM License; Comfy-Org repackage) finds every 'person' and follows each through the video (SAM3_VideoTrack, numbered 0..max_people-1 in the order found); SAM3DBody_Predict reads each tracked person's 3D joints inside its own mask; BuildPoseFile writes one 'trackNN' per SAM 3 object (NN = the object's number) with the root at its ABSOLUTE camera-space place (camera_translation 'absolute': the people keep their distances; depth from one camera is a guess). In a frame where a person is not visible SAM 3D Body still predicts something (a full-frame box): the label video (each object's mask in a flat colour on black, SAM3_TrackPreview without images) tells cinestudio/mocap.py which frames each person is really in. 'preview' = the video with the numbered masks (who is who). The one-person graph (sam3d_body) stays the default. Used by cinestudio/video_template.py (shot from-video --people 2|pick).",
+ "profile": "sam3d",
+ "capabilities": {
+  "model_family": "sam3d",
+  "output": "mesh"
+ },
+ "models": {
+  "sam3d_body": [
+   [
+    "load",
+    "model_file"
+   ]
+  ],
+  "sam3": [
+   [
+    "sam3",
+    "ckpt_name"
+   ]
+  ]
+ },
+ "inputs": {
+  "video": [
+   [
+    "vid",
+    "file"
+   ]
+  ],
+  "person_text": [
+   [
+    "who",
+    "text"
+   ]
+  ],
+  "max_people": [
+   [
+    "track",
+    "max_objects"
+   ]
+  ],
+  "detection_threshold": [
+   [
+    "track",
+    "detection_threshold"
+   ]
+  ],
+  "detect_interval": [
+   [
+    "track",
+    "detect_interval"
+   ]
+  ],
+  "fov": [
+   [
+    "pred",
+    "fov"
+   ]
+  ],
+  "hand_refinement": [
+   [
+    "pred",
+    "run_hand_refinement"
+   ]
+  ],
+  "batch_size": [
+   [
+    "pred",
+    "batch_size"
+   ]
+  ],
+  "smooth_strength": [
+   [
+    "smooth",
+    "strength"
+   ]
+  ],
+  "fps": [
+   [
+    "build",
+    "fps"
+   ],
+   [
+    "labels",
+    "fps"
+   ],
+   [
+    "preview",
+    "fps"
+   ]
+  ],
+  "include_hands": [
+   [
+    "build",
+    "format.mesh_style.include_hands"
+   ]
+  ],
+  "camera_translation": [
+   [
+    "build",
+    "camera_translation"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ]
+ },
+ "optional_nodes": {
+  "smooth": {
+   "when": "smooth_strength",
+   "bridge": {
+    "0": "mhr_pose_data"
+   }
+  }
+ },
+ "outputs": {
+  "video": "save",
+  "image": "save",
+  "labels": "labels",
+  "preview": "preview"
+ }
+}

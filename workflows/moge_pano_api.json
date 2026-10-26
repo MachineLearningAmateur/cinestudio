@@ -1,0 +1,55 @@
+{
+ "load": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "PANO.png"
+  }
+ },
+ "model": {
+  "class_type": "LoadMoGeModel",
+  "inputs": {
+   "model_name": "moge_2_vitl_normal_fp16.safetensors"
+  }
+ },
+ "pano": {
+  "class_type": "MoGePanoramaInference",
+  "inputs": {
+   "moge_model": [
+    "model",
+    0
+   ],
+   "image": [
+    "load",
+    0
+   ],
+   "resolution_level": 9,
+   "split_resolution": 512,
+   "merge_resolution": 1920,
+   "batch_size": 4,
+   "refine_steps": 3
+  }
+ },
+ "mesh": {
+  "class_type": "MoGePointMapToMesh",
+  "inputs": {
+   "moge_geometry": [
+    "pano",
+    0
+   ],
+   "batch_index": 0,
+   "decimation": 2,
+   "discontinuity_threshold": 0.0,
+   "texture": false
+  }
+ },
+ "save": {
+  "class_type": "SaveGLB",
+  "inputs": {
+   "mesh": [
+    "mesh",
+    0
+   ],
+   "filename_prefix": "cinestudio/pano_depth"
+  }
+ }
+}

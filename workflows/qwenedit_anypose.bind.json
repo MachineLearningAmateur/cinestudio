@@ -1,0 +1,143 @@
+{
+ "_about": "Binding map for workflows/qwenedit_anypose_api.json: the edit graph + the AnyPose LoRAs (serotoninboi/AnyPose, Apache-2.0, commit 9a4cb8d, for Qwen-Image-Edit-2511; base + helper at 0.7): image 1 = the character to pose, image 2 = the pose source (a mannequin render). Quality: 40 steps, cfg 3.",
+ "profile": "qwenedit",
+ "capabilities": {
+  "model_family": "qwen_edit",
+  "output": "image",
+  "recipe": "full"
+ },
+ "inputs": {
+  "image": [
+   [
+    "img",
+    "image"
+   ]
+  ],
+  "reference": [
+   [
+    "ref",
+    "image"
+   ]
+  ],
+  "instruction": [
+   [
+    "pos_txt",
+    "prompt"
+   ]
+  ],
+  "seed": [
+   [
+    "ks",
+    "seed"
+   ]
+  ],
+  "steps": [
+   [
+    "ks",
+    "steps"
+   ]
+  ],
+  "cfg": [
+   [
+    "ks",
+    "cfg"
+   ]
+  ],
+  "fast": [
+   [
+    "lora_fast",
+    "lora_name"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ],
+  "sampler": [
+   [
+    "ks",
+    "sampler_name"
+   ]
+  ],
+  "scheduler": [
+   [
+    "ks",
+    "scheduler"
+   ]
+  ],
+  "shift": [
+   [
+    "ms",
+    "shift"
+   ]
+  ],
+  "negative": [
+   [
+    "neg_txt",
+    "prompt"
+   ]
+  ],
+  "denoise": [
+   [
+    "ks",
+    "denoise"
+   ]
+  ],
+  "anypose_strength": [
+   [
+    "lora_ap1",
+    "strength_model"
+   ],
+   [
+    "lora_ap2",
+    "strength_model"
+   ]
+  ]
+ },
+ "optional_nodes": {
+  "lora_fast": {
+   "when": "fast",
+   "bridge": {
+    "0": "model"
+   }
+  }
+ },
+ "outputs": {
+  "video": "save",
+  "image": "save"
+ },
+ "models": {
+  "qwen_edit_model": [
+   [
+    "unet",
+    "unet_name"
+   ]
+  ],
+  "qwen_edit_text": [
+   [
+    "clip",
+    "clip_name"
+   ]
+  ],
+  "qwen_vae": [
+   [
+    "vae",
+    "vae_name"
+   ]
+  ],
+  "anypose_base": [
+   [
+    "lora_ap1",
+    "lora_name"
+   ]
+  ],
+  "anypose_helper": [
+   [
+    "lora_ap2",
+    "lora_name"
+   ]
+  ]
+ }
+}

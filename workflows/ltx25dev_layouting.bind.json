@@ -1,0 +1,308 @@
+{
+ "_about": "LTX-2.5 full model, Layout-To-Render IC-LoRA (setup/make_layout_graphs.py): the Blender render as the layout guide + a look image at frame -1 + the Ingredients sheet",
+ "profile": "ltx25dev",
+ "capabilities": {
+  "audio": true,
+  "first_frame": true,
+  "reference_images": 1,
+  "frames_rule": "8n+1",
+  "size_multiple": 64,
+  "default_fps": 24,
+  "model_family": "ltx25",
+  "output_scale": 2,
+  "recipe": "full",
+  "layout": true,
+  "stage2": "distilled-lora"
+ },
+ "inputs": {
+  "prompt": [
+   [
+    "pos",
+    "text"
+   ]
+  ],
+  "negative": [
+   [
+    "neg",
+    "text"
+   ]
+  ],
+  "width": [
+   [
+    "lat",
+    "width"
+   ],
+   [
+    "ref_fit",
+    "target_width"
+   ]
+  ],
+  "height": [
+   [
+    "lat",
+    "height"
+   ],
+   [
+    "ref_fit",
+    "target_height"
+   ]
+  ],
+  "frames": [
+   [
+    "lat",
+    "length"
+   ],
+   [
+    "alat",
+    "frames_number"
+   ],
+   [
+    "ref_video",
+    "amount"
+   ]
+  ],
+  "fps": [
+   [
+    "cond",
+    "frame_rate"
+   ],
+   [
+    "alat",
+    "frame_rate"
+   ],
+   [
+    "mk",
+    "fps"
+   ]
+  ],
+  "seed": [
+   [
+    "noise1",
+    "noise_seed"
+   ],
+   [
+    "noise2",
+    "noise_seed"
+   ]
+  ],
+  "style_lora": [
+   [
+    "lora_style",
+    "lora_name"
+   ],
+   [
+    "lora_style2",
+    "lora_name"
+   ]
+  ],
+  "style_lora_strength": [
+   [
+    "lora_style",
+    "strength_model"
+   ],
+   [
+    "lora_style2",
+    "strength_model"
+   ]
+  ],
+  "first_frame": [
+   [
+    "first_load",
+    "file"
+   ]
+  ],
+  "no_first_frame": [
+   [
+    "i2v",
+    "bypass"
+   ],
+   [
+    "i2v2",
+    "bypass"
+   ]
+  ],
+  "first_strength": [
+   [
+    "i2v",
+    "strength"
+   ],
+   [
+    "i2v2",
+    "strength"
+   ]
+  ],
+  "refine_sigmas": [
+   [
+    "sigmas2",
+    "sigmas"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ],
+  "video_cfg": [
+   [
+    "gpv1",
+    "cfg"
+   ]
+  ],
+  "audio_cfg": [
+   [
+    "gpa1",
+    "cfg"
+   ]
+  ],
+  "rescale": [
+   [
+    "gpv1",
+    "rescale"
+   ],
+   [
+    "gpa1",
+    "rescale"
+   ]
+  ],
+  "stg_scale": [
+   [
+    "gpv1",
+    "stg"
+   ],
+   [
+    "gpa1",
+    "stg"
+   ]
+  ],
+  "modality_scale": [
+   [
+    "gpv1",
+    "modality_scale"
+   ],
+   [
+    "gpa1",
+    "modality_scale"
+   ]
+  ],
+  "reference": [
+   [
+    "ref_load",
+    "image"
+   ]
+  ],
+  "ingredients_strength": [
+   [
+    "lora_ing",
+    "strength_model"
+   ]
+  ],
+  "sigmas": [
+   [
+    "sigmas1",
+    "sigmas"
+   ]
+  ],
+  "layout_video": [
+   [
+    "lay_load",
+    "file"
+   ]
+  ],
+  "look_image": [
+   [
+    "look_load",
+    "image"
+   ]
+  ],
+  "layout_strength": [
+   [
+    "lora_lay",
+    "strength_model"
+   ]
+  ],
+  "guide_strength": [
+   [
+    "g_lay",
+    "strength"
+   ],
+   [
+    "g_lay2",
+    "strength"
+   ]
+  ],
+  "stage2_lora_strength": [
+   [
+    "lora_dist",
+    "strength_model"
+   ]
+  ]
+ },
+ "models": {
+  "ic_ingredients25": [
+   [
+    "lora_ing",
+    "lora_name"
+   ]
+  ],
+  "ltx25_model": [
+   [
+    "ckpt",
+    "unet_name"
+   ]
+  ],
+  "ltx25_text": [
+   [
+    "te",
+    "clip_name"
+   ]
+  ],
+  "ltx25_vae": [
+   [
+    "vvae",
+    "vae_name"
+   ]
+  ],
+  "ltx25_audio_vae": [
+   [
+    "audio_vae",
+    "vae_name"
+   ]
+  ],
+  "ltx25_upscale": [
+   [
+    "up_model",
+    "model_name"
+   ]
+  ],
+  "ic_layout": [
+   [
+    "lora_lay",
+    "lora_name"
+   ]
+  ],
+  "ltx25_distilled_lora": [
+   [
+    "lora_dist",
+    "lora_name"
+   ]
+  ]
+ },
+ "outputs": {
+  "video": "save"
+ },
+ "optional_nodes": {
+  "lora_style": {
+   "when": "style_lora",
+   "bridge": {
+    "0": "model"
+   }
+  },
+  "lora_style2": {
+   "when": "style_lora",
+   "bridge": {
+    "0": "model"
+   }
+  }
+ }
+}

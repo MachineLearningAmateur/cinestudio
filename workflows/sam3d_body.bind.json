@@ -1,0 +1,70 @@
+{
+ "_about": "3D body motion of ONE person from a video (Meta SAM 3D Body, ComfyUI core nodes; SAM License: royalty-free, no military/weapons uses, acknowledge its use, pass the licence on when redistributing the weights). Video -> frames -> SAM3DBody_Predict (full-frame person, hand refinement) -> BuildPoseFile 'openpose' = an OpenPose-18 3D skeleton (+21+21 hand points) as an animated GLB, root moving relative to frame 0 ('centered'). Read by cinestudio/mocap.py (templates from a video: cinestudio/video_template.py). Replaces DWPose + our 2D->3D lift for reference-dance templates (test 2026-10-22).",
+ "profile": "sam3d",
+ "capabilities": {
+  "model_family": "sam3d",
+  "output": "mesh"
+ },
+ "models": {
+  "sam3d_body": [
+   [
+    "load",
+    "model_file"
+   ]
+  ]
+ },
+ "inputs": {
+  "video": [
+   [
+    "vid",
+    "file"
+   ]
+  ],
+  "fov": [
+   [
+    "pred",
+    "fov"
+   ]
+  ],
+  "hand_refinement": [
+   [
+    "pred",
+    "run_hand_refinement"
+   ]
+  ],
+  "batch_size": [
+   [
+    "pred",
+    "batch_size"
+   ]
+  ],
+  "fps": [
+   [
+    "build",
+    "fps"
+   ]
+  ],
+  "include_hands": [
+   [
+    "build",
+    "format.mesh_style.include_hands"
+   ]
+  ],
+  "camera_translation": [
+   [
+    "build",
+    "camera_translation"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ]
+ },
+ "outputs": {
+  "video": "save",
+  "image": "save"
+ }
+}

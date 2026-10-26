@@ -1,0 +1,250 @@
+{
+ "unet": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "qwen_image_edit_2511_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "Qwen-Image-Edit-2511"
+  }
+ },
+ "lora_angles": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "unet",
+    0
+   ],
+   "lora_name": "qwen-image-edit-2511-multiple-angles-lora.safetensors",
+   "strength_model": 0.9
+  },
+  "_meta": {
+   "title": "Multiple-Angles LoRA"
+  }
+ },
+ "ms": {
+  "class_type": "ModelSamplingAuraFlow",
+  "inputs": {
+   "model": [
+    "lora_angles",
+    0
+   ],
+   "shift": 3.1
+  },
+  "_meta": {
+   "title": "Model sampling (template: shift 3.1)"
+  }
+ },
+ "cfgnorm": {
+  "class_type": "CFGNorm",
+  "inputs": {
+   "model": [
+    "ms",
+    0
+   ],
+   "strength": 1.0
+  },
+  "_meta": {
+   "title": "CFG norm"
+  }
+ },
+ "lora_fast": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "cfgnorm",
+    0
+   ],
+   "lora_name": "Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
+   "strength_model": 1.0
+  },
+  "_meta": {
+   "title": "Lightning 4-step LoRA (optional: speed)"
+  }
+ },
+ "clip": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "type": "qwen_image",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "Qwen2.5-VL 7B"
+  }
+ },
+ "vae": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "qwen_image_vae.safetensors"
+  },
+  "_meta": {
+   "title": "VAE"
+  }
+ },
+ "img": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "FRONT.png"
+  },
+  "_meta": {
+   "title": "Front view"
+  }
+ },
+ "scale": {
+  "class_type": "FluxKontextImageScale",
+  "inputs": {
+   "image": [
+    "img",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Scale to a supported size"
+  }
+ },
+ "pos_txt": {
+  "class_type": "TextEncodeQwenImageEditPlus",
+  "inputs": {
+   "clip": [
+    "clip",
+    0
+   ],
+   "prompt": "<sks> front-right quarter view eye-level shot wide shot",
+   "vae": [
+    "vae",
+    0
+   ],
+   "image1": [
+    "scale",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Instruction"
+  }
+ },
+ "neg_txt": {
+  "class_type": "TextEncodeQwenImageEditPlus",
+  "inputs": {
+   "clip": [
+    "clip",
+    0
+   ],
+   "prompt": "",
+   "vae": [
+    "vae",
+    0
+   ],
+   "image1": [
+    "scale",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Empty negative"
+  }
+ },
+ "pos": {
+  "class_type": "FluxKontextMultiReferenceLatentMethod",
+  "inputs": {
+   "conditioning": [
+    "pos_txt",
+    0
+   ],
+   "reference_latents_method": "index_timestep_zero"
+  },
+  "_meta": {
+   "title": "Reference method"
+  }
+ },
+ "neg": {
+  "class_type": "FluxKontextMultiReferenceLatentMethod",
+  "inputs": {
+   "conditioning": [
+    "neg_txt",
+    0
+   ],
+   "reference_latents_method": "index_timestep_zero"
+  },
+  "_meta": {
+   "title": "Reference method (neg)"
+  }
+ },
+ "enc": {
+  "class_type": "VAEEncode",
+  "inputs": {
+   "pixels": [
+    "scale",
+    0
+   ],
+   "vae": [
+    "vae",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Encode the front view"
+  }
+ },
+ "ks": {
+  "class_type": "KSampler",
+  "inputs": {
+   "model": [
+    "lora_fast",
+    0
+   ],
+   "seed": 1,
+   "steps": 40,
+   "cfg": 3.0,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "positive": [
+    "pos",
+    0
+   ],
+   "negative": [
+    "neg",
+    0
+   ],
+   "latent_image": [
+    "enc",
+    0
+   ],
+   "denoise": 1.0
+  },
+  "_meta": {
+   "title": "Sampler (quality: 40 steps cfg 3; fast: 4 steps cfg 1 + Lightning)"
+  }
+ },
+ "dec": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "ks",
+    0
+   ],
+   "vae": [
+    "vae",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Decode"
+  }
+ },
+ "save": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "dec",
+    0
+   ],
+   "filename_prefix": "cinestudio/angle"
+  },
+  "_meta": {
+   "title": "New angle"
+  }
+ }
+}

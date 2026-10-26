@@ -1,0 +1,70 @@
+{
+ "kind": "plate",
+ "source": "set",
+ "shot": "shan_shen_bu_balls",
+ "scene": "an indoor school gymnasium: a wooden basketball court with a painted key and court lines, padded mats along the back wall, two double doors with exit signs, two framed banners on the back wall, one on each side of the hoop, a basketball hoop hung from the roof, a cart of balls in the back-left corner",
+ "style": "stylized 3D anime noir with soft painterly rendering, muted atmospheric environments, restrained violet and magenta accents, subtle material textures, mysterious surreal undertones; character proportions remain anime-inspired, with smooth facial surfaces and clean silhouettes, cinematic low-key lighting with deep shadows",
+ "style_ref": "anime_noir",
+ "style_version": 1,
+ "prompt": "Redraw Picture 1, a simple clay render of a 3D set seen from one still camera, as a finished picture of this place: an indoor school gymnasium: a wooden basketball court with a painted key and court lines, padded mats along the back wall, two double doors with exit signs, a scoreboard and a banner on the back wall, a basketball hoop hung from the roof, a cart of balls in the back-left corner. Every object in Picture 1 keeps exactly its place, size, shape and outline, and the camera, the floor, the walls and the horizon stay exactly where they are; only the materials, colours, textures and light change, so each clay shape becomes the real object it stands for. stylized 3D anime noir with soft painterly rendering, muted atmospheric environments, restrained violet and magenta accents, subtle material textures, mysterious surreal undertones; character proportions remain anime-inspired, with smooth facial surfaces and clean silhouettes, cinematic low-key lighting with deep shadows. The place is empty: no people and no characters. The image contains no recognizable text. Keep everything else exactly the same.",
+ "seed": 202,
+ "camera": {
+  "location": [
+   0.0,
+   -4.0,
+   1.45
+  ],
+  "forward": [
+   0.0,
+   0.9913,
+   -0.1314
+  ],
+  "pitch_deg": -7.548,
+  "lens_mm": 30.0,
+  "sensor_mm": 36.0,
+  "fit": "HORIZONTAL",
+  "resolution": [
+   1536,
+   896
+  ],
+  "hfov_deg": 61.928,
+  "vfov_deg": 38.58,
+  "horizon_from_top": 0.3107,
+  "height_m": 1.45,
+  "moves": false
+ },
+ "set_fit": {
+  "applied": true,
+  "fit_before": 0.434,
+  "scale": [
+   1.0182,
+   1.0136
+  ],
+  "rotation_deg": 0.008,
+  "shift": [
+   -12.9,
+   -5.5
+  ],
+  "fit_after": 0.584
+ },
+ "sha1": "c456b31fd270372179f1604b732df4dcd86d1933",
+ "created": 1792909737.8847845,
+ "order": 1,
+ "edit": "Two signs on the back wall, each painted exactly in code and then redrawn by Qwen-Image-Edit region edits: the Comfy wordmark on the banner (denoise 0.9, seed 303) and \"Open Source FTW\" in block letters built from the wordmark as a dim LED board (code base about 55% darker, denoise 0.9, seed 404); both EXIT signs re-lettered \"EXIT\" (text in quotes, denoise 1.0, seed 202); then a blending pass with wall context (denoise 0.8: scoreboard seed 202, EXIT signs seed 303). Method: docs/text_in_images_research.md. 2026-10-26 (user: the right sign \"a banner ... similar to comfy ... so it doesnt glow\"): the LED scoreboard replaced by a printed cloth banner, the mirror of the Comfy banner's frame and cloth (its letters removed) at the mirror place, lit like the right wall, \"Open Source / FTW\" in the Comfy block letters and ink, then a Qwen region edit (denoise 0.9, seed 202; candidates in .cinestudio/gauntlet/right_banner).",
+ "regions": {
+  "banner": [
+   312,
+   42,
+   594,
+   204
+  ],
+  "banner_right": [
+   1326,
+   42,
+   1608,
+   204
+  ]
+ },
+ "set_png": "set.png was rendered again (bpy_jobs/render_set.py, Workbench, frame 1, the still camera) from the Set of the built-in template shan_shen_bu_balls with its two empty banners (2026-10-26); the plate was drawn over an earlier set (the right banner is painted at the mirror place of the left one)",
+ "updated": 1792995620.3683593
+}

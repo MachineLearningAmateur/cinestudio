@@ -1,0 +1,203 @@
+{
+ "_about": "LTX-2.5 DISTILLED. Binding map for workflows/ltx25_ref_api.json: control video (pose/set) + a reference sheet for the character (IC-LoRA Ingredients).",
+ "profile": "ltx25",
+ "capabilities": {
+  "audio": true,
+  "first_frame": true,
+  "reference_images": 1,
+  "frames_rule": "8n+1",
+  "size_multiple": 64,
+  "default_fps": 24,
+  "model_family": "ltx25",
+  "recipe": "distilled"
+ },
+ "inputs": {
+  "control_video": [
+   [
+    "ctl_load",
+    "file"
+   ]
+  ],
+  "first_frame": [
+   [
+    "first_load",
+    "file"
+   ]
+  ],
+  "no_first_frame": [
+   [
+    "i2v",
+    "bypass"
+   ]
+  ],
+  "prompt": [
+   [
+    "pos",
+    "text"
+   ]
+  ],
+  "negative": [
+   [
+    "neg",
+    "text"
+   ]
+  ],
+  "width": [
+   [
+    "lat",
+    "width"
+   ],
+   [
+    "ref_fit",
+    "target_width"
+   ]
+  ],
+  "height": [
+   [
+    "lat",
+    "height"
+   ],
+   [
+    "ref_fit",
+    "target_height"
+   ]
+  ],
+  "frames": [
+   [
+    "lat",
+    "length"
+   ],
+   [
+    "alat",
+    "frames_number"
+   ],
+   [
+    "ref_video",
+    "amount"
+   ]
+  ],
+  "fps": [
+   [
+    "cond",
+    "frame_rate"
+   ],
+   [
+    "alat",
+    "frame_rate"
+   ],
+   [
+    "mk",
+    "fps"
+   ]
+  ],
+  "seed": [
+   [
+    "ks",
+    "seed"
+   ]
+  ],
+  "steps": [
+   [
+    "ks",
+    "steps"
+   ]
+  ],
+  "control_strength": [
+   [
+    "guide",
+    "strength"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ],
+  "reference": [
+   [
+    "ref_load",
+    "image"
+   ]
+  ],
+  "reference_strength": [
+   [
+    "ref_guide",
+    "strength"
+   ]
+  ],
+  "ingredients_strength": [
+   [
+    "lora_ing",
+    "strength_model"
+   ]
+  ],
+  "style_lora": [
+   [
+    "lora_style",
+    "lora_name"
+   ]
+  ],
+  "style_lora_strength": [
+   [
+    "lora_style",
+    "strength_model"
+   ]
+  ],
+  "first_strength": [
+   [
+    "i2v",
+    "strength"
+   ]
+  ]
+ },
+ "outputs": {
+  "video": "save"
+ },
+ "optional_nodes": {
+  "lora_style": {
+   "when": "style_lora",
+   "bridge": {
+    "0": "model"
+   }
+  }
+ },
+ "models": {
+  "ic_union": [
+   [
+    "lora",
+    "lora_name"
+   ]
+  ],
+  "ic_ingredients25": [
+   [
+    "lora_ing",
+    "lora_name"
+   ]
+  ],
+  "ltx25_text": [
+   [
+    "te",
+    "clip_name"
+   ]
+  ],
+  "ltx25_vae": [
+   [
+    "vvae",
+    "vae_name"
+   ]
+  ],
+  "ltx25_audio_vae": [
+   [
+    "audio_vae",
+    "vae_name"
+   ]
+  ],
+  "ltx25_distilled": [
+   [
+    "ckpt",
+    "unet_name"
+   ]
+  ]
+ }
+}

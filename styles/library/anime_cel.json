@@ -1,0 +1,10 @@
+{
+ "label": "Anime cel",
+ "version": 1,
+ "words": "cinematic fantasy anime cel-shaded illustration with hand-drawn linework, painted shading, vivid magical atmosphere, stylized fantasy character design",
+ "light": "",
+ "negative_image": "photo, photorealistic, 3D render, CGI, plastic, blurry",
+ "lora": null,
+ "reference": null,
+ "_about": "The user's anime text (2026-10-23 A/B: it beat a 3D sentence on motion in one seed)."
+}

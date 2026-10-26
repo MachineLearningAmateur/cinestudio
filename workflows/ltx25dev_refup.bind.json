@@ -1,0 +1,300 @@
+{
+ "_about": "LTX-2.5 FULL model (dev, non-distilled). Binding map for workflows/ltx25dev_refup_api.json: the control video + reference sheet graph followed by the official two-stage upscale. width/height are the stage-1 size; the output is output_scale times larger.",
+ "profile": "ltx25dev",
+ "capabilities": {
+  "audio": true,
+  "first_frame": true,
+  "reference_images": 1,
+  "frames_rule": "8n+1",
+  "size_multiple": 64,
+  "default_fps": 24,
+  "model_family": "ltx25",
+  "output_scale": 2,
+  "recipe": "full"
+ },
+ "inputs": {
+  "control_video": [
+   [
+    "ctl_load",
+    "file"
+   ]
+  ],
+  "first_frame": [
+   [
+    "first_load",
+    "file"
+   ]
+  ],
+  "no_first_frame": [
+   [
+    "i2v",
+    "bypass"
+   ],
+   [
+    "i2v2",
+    "bypass"
+   ]
+  ],
+  "prompt": [
+   [
+    "pos",
+    "text"
+   ]
+  ],
+  "negative": [
+   [
+    "neg",
+    "text"
+   ]
+  ],
+  "width": [
+   [
+    "lat",
+    "width"
+   ],
+   [
+    "ref_fit",
+    "target_width"
+   ]
+  ],
+  "height": [
+   [
+    "lat",
+    "height"
+   ],
+   [
+    "ref_fit",
+    "target_height"
+   ]
+  ],
+  "frames": [
+   [
+    "lat",
+    "length"
+   ],
+   [
+    "alat",
+    "frames_number"
+   ],
+   [
+    "ref_video",
+    "amount"
+   ]
+  ],
+  "fps": [
+   [
+    "cond",
+    "frame_rate"
+   ],
+   [
+    "alat",
+    "frame_rate"
+   ],
+   [
+    "mk",
+    "fps"
+   ]
+  ],
+  "seed": [
+   [
+    "noise1",
+    "noise_seed"
+   ],
+   [
+    "noise2",
+    "noise_seed"
+   ]
+  ],
+  "steps": [
+   [
+    "sigmas1",
+    "steps"
+   ]
+  ],
+  "control_strength": [
+   [
+    "guide",
+    "strength"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ],
+  "reference": [
+   [
+    "ref_load",
+    "image"
+   ]
+  ],
+  "reference_strength": [
+   [
+    "ref_guide",
+    "strength"
+   ]
+  ],
+  "ingredients_strength": [
+   [
+    "lora_ing",
+    "strength_model"
+   ]
+  ],
+  "style_lora": [
+   [
+    "lora_style",
+    "lora_name"
+   ],
+   [
+    "lora_style2",
+    "lora_name"
+   ]
+  ],
+  "style_lora_strength": [
+   [
+    "lora_style",
+    "strength_model"
+   ],
+   [
+    "lora_style2",
+    "strength_model"
+   ]
+  ],
+  "refine_sigmas": [
+   [
+    "sigmas2",
+    "sigmas"
+   ]
+  ],
+  "first_strength": [
+   [
+    "i2v",
+    "strength"
+   ],
+   [
+    "i2v2",
+    "strength"
+   ]
+  ],
+  "video_cfg": [
+   [
+    "gpv1",
+    "cfg"
+   ],
+   [
+    "gpv2",
+    "cfg"
+   ]
+  ],
+  "audio_cfg": [
+   [
+    "gpa1",
+    "cfg"
+   ],
+   [
+    "gpa2",
+    "cfg"
+   ]
+  ],
+  "rescale": [
+   [
+    "gpv1",
+    "rescale"
+   ],
+   [
+    "gpa1",
+    "rescale"
+   ],
+   [
+    "gpv2",
+    "rescale"
+   ],
+   [
+    "gpa2",
+    "rescale"
+   ]
+  ],
+  "stg_scale": [
+   [
+    "gpv1",
+    "stg"
+   ],
+   [
+    "gpa1",
+    "stg"
+   ]
+  ],
+  "modality_scale": [
+   [
+    "gpv1",
+    "modality_scale"
+   ],
+   [
+    "gpa1",
+    "modality_scale"
+   ]
+  ]
+ },
+ "outputs": {
+  "video": "save"
+ },
+ "optional_nodes": {
+  "lora_style": {
+   "when": "style_lora",
+   "bridge": {
+    "0": "model"
+   }
+  },
+  "lora_style2": {
+   "when": "style_lora",
+   "bridge": {
+    "0": "model"
+   }
+  }
+ },
+ "models": {
+  "ic_union": [
+   [
+    "lora",
+    "lora_name"
+   ]
+  ],
+  "ic_ingredients25": [
+   [
+    "lora_ing",
+    "lora_name"
+   ]
+  ],
+  "ltx25_model": [
+   [
+    "ckpt",
+    "unet_name"
+   ]
+  ],
+  "ltx25_text": [
+   [
+    "te",
+    "clip_name"
+   ]
+  ],
+  "ltx25_vae": [
+   [
+    "vvae",
+    "vae_name"
+   ]
+  ],
+  "ltx25_audio_vae": [
+   [
+    "audio_vae",
+    "vae_name"
+   ]
+  ],
+  "ltx25_upscale": [
+   [
+    "up_model",
+    "model_name"
+   ]
+  ]
+ }
+}

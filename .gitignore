@@ -1,0 +1,86 @@
+# cinestudio .gitignore: what must never reach a public repository.
+# Shipped on purpose (keep them tracked): templates/library/* (shot.blend, preview.mp4, shot.json, timeline.json),
+# backgrounds/library/* (plate.png, set.png, bg.json), styles/library/*, workflows/*, docs/*.
+
+# ---- private user data and local runtime state ------------------------------------------------------------------
+# characters, runs, uploads, backgrounds, songs, films, jobs, caches, gauntlet experiments, backups, tokens
+.cinestudio/
+secrets.json
+**/secrets*.json
+.env
+.env.*
+*.local.json
+*.pem
+*.key
+
+# ---- private results and generated media ------------------------------------------------------------------------
+experiments/
+videos/
+**/renders/
+**/checks/
+*.mp4
+*.mov
+*.mkv
+*.webm
+!templates/library/*/preview.mp4
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
+# (a built-in template's sound travels PACKED inside its shot.blend)
+
+# ---- model weights and downloads (setup/models.json pins and downloads them) -----------------------------------
+*.safetensors
+*.ckpt
+*.gguf
+*.pt
+*.pth
+*.bin
+*.onnx
+*.part
+*.partial
+*.download
+
+# ---- Blender autosaves and backups ---------------------------------------------------------------------------------
+*.blend1
+*.blend2
+*.blend3
+*.blend@
+quit.blend
+
+# ---- Python, tests and tools ------------------------------------------------------------------------------------------
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+*.egg-info/
+node_modules/
+
+# ---- logs, temp files ---------------------------------------------------------------------------------------------------
+*.log
+*.tmp
+*.temp
+*.bak
+*.orig
+*.swp
+*~
+
+# ---- editors, OS and local agent state -------------------------------------------------------------------------------
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+desktop.ini
+# Claude Code's local state (locks, local settings); AGENTS.md and CLAUDE.md ARE shipped
+.claude/

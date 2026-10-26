@@ -1,0 +1,155 @@
+{
+ "unet": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "z_image_bf16.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "Z-Image (base, non-distilled)"
+  }
+ },
+ "lora_style": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "model": [
+    "unet",
+    0
+   ],
+   "lora_name": "STYLE_LORA.safetensors",
+   "strength_model": 0.8
+  },
+  "_meta": {
+   "title": "Style LoRA for Z-Image (optional)"
+  }
+ },
+ "ms": {
+  "class_type": "ModelSamplingAuraFlow",
+  "inputs": {
+   "model": [
+    "lora_style",
+    0
+   ],
+   "shift": 3.0
+  },
+  "_meta": {
+   "title": "Model sampling (template: shift 3)"
+  }
+ },
+ "clip": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "qwen_3_4b.safetensors",
+   "type": "lumina2",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "Qwen3 4B text encoder"
+  }
+ },
+ "pos": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "clip",
+    0
+   ],
+   "text": "PROMPT"
+  },
+  "_meta": {
+   "title": "Prompt"
+  }
+ },
+ "neg": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "clip",
+    0
+   ],
+   "text": "blurry, low quality, deformed hands, extra fingers, missing fingers, extra limbs, cropped body, text, watermark, signature, background scenery"
+  },
+  "_meta": {
+   "title": "Negative prompt (cfg 4 uses it)"
+  }
+ },
+ "lat": {
+  "class_type": "EmptySD3LatentImage",
+  "inputs": {
+   "width": 1024,
+   "height": 1536,
+   "batch_size": 1
+  },
+  "_meta": {
+   "title": "Image size"
+  }
+ },
+ "ks": {
+  "class_type": "KSampler",
+  "inputs": {
+   "model": [
+    "ms",
+    0
+   ],
+   "seed": 1,
+   "steps": 25,
+   "cfg": 4.0,
+   "sampler_name": "res_multistep",
+   "scheduler": "simple",
+   "positive": [
+    "pos",
+    0
+   ],
+   "negative": [
+    "neg",
+    0
+   ],
+   "latent_image": [
+    "lat",
+    0
+   ],
+   "denoise": 1.0
+  },
+  "_meta": {
+   "title": "Sampler (base template: 25 steps, cfg 4, res_multistep)"
+  }
+ },
+ "vae": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "ae.safetensors"
+  },
+  "_meta": {
+   "title": "VAE"
+  }
+ },
+ "dec": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "ks",
+    0
+   ],
+   "vae": [
+    "vae",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Decode"
+  }
+ },
+ "save": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "dec",
+    0
+   ],
+   "filename_prefix": "cinestudio/front"
+  },
+  "_meta": {
+   "title": "Front view"
+  }
+ }
+}

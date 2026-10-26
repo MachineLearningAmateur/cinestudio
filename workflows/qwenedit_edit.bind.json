@@ -1,0 +1,146 @@
+{
+ "_about": "Binding map for workflows/qwenedit_edit_api.json: change details of image 1 by an instruction; image 2 is a reference the instruction can point to (Qwen-Image-Edit-2511, Apache-2.0). Quality: 40 steps, cfg 3. Fast: fast=Lightning LoRA, 4 steps, cfg 1.",
+ "profile": "qwenedit",
+ "capabilities": {
+  "model_family": "qwen_edit",
+  "output": "image",
+  "recipe": "full"
+ },
+ "inputs": {
+  "image": [
+   [
+    "img",
+    "image"
+   ]
+  ],
+  "reference": [
+   [
+    "ref",
+    "image"
+   ]
+  ],
+  "instruction": [
+   [
+    "pos_txt",
+    "prompt"
+   ]
+  ],
+  "seed": [
+   [
+    "ks",
+    "seed"
+   ]
+  ],
+  "steps": [
+   [
+    "ks",
+    "steps"
+   ]
+  ],
+  "cfg": [
+   [
+    "ks",
+    "cfg"
+   ]
+  ],
+  "fast": [
+   [
+    "lora_fast",
+    "lora_name"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ],
+  "sampler": [
+   [
+    "ks",
+    "sampler_name"
+   ]
+  ],
+  "scheduler": [
+   [
+    "ks",
+    "scheduler"
+   ]
+  ],
+  "shift": [
+   [
+    "ms",
+    "shift"
+   ]
+  ],
+  "negative": [
+   [
+    "neg_txt",
+    "prompt"
+   ]
+  ],
+  "denoise": [
+   [
+    "ks",
+    "denoise"
+   ]
+  ],
+  "cfg_tail_start": [
+   [
+    "cfg_tail",
+    "start_percent"
+   ]
+  ]
+ },
+ "optional_nodes": {
+  "lora_fast": {
+   "when": "fast",
+   "bridge": {
+    "0": "model"
+   }
+  }
+ },
+ "outputs": {
+  "video": "save",
+  "image": "save"
+ },
+ "models": {
+  "qwen_edit_model": [
+   [
+    "unet",
+    "unet_name"
+   ]
+  ],
+  "qwen_edit_text": [
+   [
+    "clip",
+    "clip_name"
+   ]
+  ],
+  "qwen_vae": [
+   [
+    "vae",
+    "vae_name"
+   ]
+  ]
+ },
+ "optional_images": {
+  "reference": {
+   "nodes": [
+    "ref",
+    "ref_scale"
+   ],
+   "inputs": [
+    [
+     "pos_txt",
+     "image2"
+    ],
+    [
+     "neg_txt",
+     "image2"
+    ]
+   ],
+   "_about": "no reference file: Picture 1 only (the official single-image edit; 1.7x faster than the same picture sent twice)"
+  }
+ }
+}

@@ -1,0 +1,121 @@
+{
+ "_about": "Binding map for workflows/qwenedit_angle_api.json: the same character from another camera angle (Qwen-Image-Edit-2511 + fal Multiple-Angles LoRA, both Apache-2.0). Quality mode: no 'fast' LoRA, 40 steps, cfg 3. Fast mode: fast=Lightning LoRA file, 4 steps, cfg 1.",
+ "profile": "qwenedit",
+ "capabilities": {
+  "model_family": "qwen_edit",
+  "output": "image",
+  "recipe": "full"
+ },
+ "inputs": {
+  "front": [
+   [
+    "img",
+    "image"
+   ]
+  ],
+  "instruction": [
+   [
+    "pos_txt",
+    "prompt"
+   ]
+  ],
+  "seed": [
+   [
+    "ks",
+    "seed"
+   ]
+  ],
+  "steps": [
+   [
+    "ks",
+    "steps"
+   ]
+  ],
+  "cfg": [
+   [
+    "ks",
+    "cfg"
+   ]
+  ],
+  "angles_strength": [
+   [
+    "lora_angles",
+    "strength_model"
+   ]
+  ],
+  "fast": [
+   [
+    "lora_fast",
+    "lora_name"
+   ]
+  ],
+  "output_prefix": [
+   [
+    "save",
+    "filename_prefix"
+   ]
+  ],
+  "sampler": [
+   [
+    "ks",
+    "sampler_name"
+   ]
+  ],
+  "scheduler": [
+   [
+    "ks",
+    "scheduler"
+   ]
+  ],
+  "shift": [
+   [
+    "ms",
+    "shift"
+   ]
+  ],
+  "negative": [
+   [
+    "neg_txt",
+    "prompt"
+   ]
+  ]
+ },
+ "optional_nodes": {
+  "lora_fast": {
+   "when": "fast",
+   "bridge": {
+    "0": "model"
+   }
+  }
+ },
+ "outputs": {
+  "video": "save",
+  "image": "save"
+ },
+ "models": {
+  "qwen_edit_model": [
+   [
+    "unet",
+    "unet_name"
+   ]
+  ],
+  "qwen_edit_text": [
+   [
+    "clip",
+    "clip_name"
+   ]
+  ],
+  "qwen_vae": [
+   [
+    "vae",
+    "vae_name"
+   ]
+  ],
+  "qwen_angles": [
+   [
+    "lora_angles",
+    "lora_name"
+   ]
+  ]
+ }
+}
