@@ -43,15 +43,27 @@ for c in python3.13 python3.12 python3; do
 done
 [ -n "$PY" ] || { echo "Python 3.12 or newer is needed (for example: apt install python3.12 python3.12-venv, or uv python install 3.12)" >&2; exit 1; }
 echo "  Python: $($PY --version)"
-command -v nvidia-smi >/dev/null && nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader || echo "warning: no nvidia-smi (no GPU?)"
+if command -v nvidia-smi >/dev/null; then
+  nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
+  # cu130 torch needs a host driver >= 580 (CUDA 13.0); an older host gives torch.cuda.is_available() == False
+  DRV=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -1 | cut -d. -f1)
+  if [ "$CUDA" = "cu130" ] && [ -n "$DRV" ] && [ "$DRV" -lt 580 ] 2>/dev/null; then
+    echo "WARNING: the host driver is $DRV (< 580): cu130 torch will not see the GPU. Pick a pod with CUDA 13.0" \
+         "(RunPod's CUDA filter, or a *-cu1300-* image) or use --cuda cu128 (untested)." >&2
+  fi
+else
+  echo "warning: no nvidia-smi (no GPU?)"
+fi
 mkdir -p "$ROOT" "$MODELS"
 
 if command -v apt-get >/dev/null && [ "$(id -u)" = "0" ]; then
   say "system packages (git, curl, Blender's libraries)"
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -qq
-  apt-get install -y -qq git curl xz-utils python3-venv libgl1 libegl1 libxrender1 libxi6 libxkbcommon0 libsm6 \
-    libxext6 libxxf86vm1 libxfixes3 libx11-6 >/dev/null
+  apt-get install -y -qq git curl xz-utils python3-venv libgl1 libegl1 libglib2.0-0 libxrender1 libxi6 \
+    libxkbcommon0 libsm6 libxext6 libxxf86vm1 libxfixes3 libx11-6 >/dev/null
+  # python3-venv covers only the distro's python3: the chosen python3.12/3.13 needs its own venv package
+  if [ "$PY" != "python3" ]; then apt-get install -y -qq "${PY}-venv" >/dev/null 2>&1 || true; fi
 fi
 
 say "the app (venv + requirements)"
@@ -147,7 +159,23 @@ cd "$REPO"
 APY="$REPO/.venv/bin/python"
 "$APY" -m cinestudio comfy detect | tail -1
 
-if [ -z "${HF_TOKEN:-}" ] && [ "$YES" != "1" ]; then
+# the queue, job and engine locks live in CINESTUDIO_HOME (on the network volume): they need flock
+if ! "$APY" - "$CINESTUDIO_HOME" <<'PY'
+import fcntl, pathlib, sys
+p = pathlib.Path(sys.argv[1]) / ".flock_test"
+with open(p, "a+b") as fh:
+    fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+p.unlink()
+PY
+then
+  echo "WARNING: file locks (flock) do not work in $CINESTUDIO_HOME: set CINESTUDIO_HOME to a local disk in" \
+       "$ROOT/env.sh (the queue and the jobs need them)." >&2
+fi
+
+if [ -n "${HF_TOKEN:-}" ]; then
+  # keep it for later downloads from the app (Quick setup, optional features); the environment still wins
+  printf '%s' "$HF_TOKEN" | "$APY" -m cinestudio settings token set hf | tail -1
+elif [ "$YES" != "1" ] && [ -t 0 ]; then
   say "Hugging Face token (optional; the gated LTX-2.5 files need one with access) - press Enter to skip"
   read -rs -p "token: " tok; echo
   if [ -n "$tok" ]; then printf '%s' "$tok" | "$APY" -m cinestudio settings token set hf | tail -1; fi
@@ -160,12 +188,16 @@ if [ "$SKIP_MODELS" != "1" ]; then
 fi
 
 say "doctor"
-"$APY" -m cinestudio doctor | tail -1
+# ComfyUI and the proxy are not running yet (the app starts them): their checks fail here, and that is expected
+"$APY" -m cinestudio doctor | tail -1 || echo "note: doctor reports what is not running yet (ComfyUI, the proxy):" \
+  "normal before the app starts; check its other lines (Blender, models, ffmpeg)"
 
 cat <<EOF
 
-Done. Start the app on the pod:
+Done. Start the app on the pod inside tmux (it keeps running when the SSH session ends):
+  tmux new -s cinestudio
   source $ROOT/env.sh && cd $REPO && .venv/bin/python -m cinestudio app
-From your PC, open a tunnel and the page:
+From your PC, open a tunnel and the page (the local port must be 8765: the app accepts only that host):
   ssh -L 8765:127.0.0.1:8765 <the pod's SSH address>      then open http://127.0.0.1:8765
+Agents that use only the CLI (no app): start the proxy first: .venv/bin/python -m cinestudio proxy start
 EOF

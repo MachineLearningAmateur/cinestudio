@@ -10,6 +10,7 @@ Windows: msvcrt.locking on byte 0; POSIX: fcntl.flock.
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 import sys
@@ -42,9 +43,14 @@ class FileLock:
             else:
                 import fcntl
                 fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
+        except OSError as exc:
             fh.close()
-            return False
+            if sys.platform.startswith("win") or exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK, errno.EACCES):
+                return False
+            # a filesystem without flock (some network volumes: ENOLCK, EOPNOTSUPP) must not read as "busy": every
+            # queue, job and engine lock would then wait for a holder that does not exist (RunPod check, 2026-10-26)
+            raise OSError(exc.errno, f"file locks do not work in {self.path.parent} ({exc.strerror}); put "
+                                     "CINESTUDIO_HOME on a disk that supports flock") from exc
         self._fh = fh
         return True
 

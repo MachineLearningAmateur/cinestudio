@@ -187,8 +187,13 @@ def status() -> dict:
 
 def has_sage_attention(cfg: dict) -> bool:
     """SageAttention installed in ComfyUI's own Python environment (site-packages/sageattention)."""
-    root = Path(cfg["python"]).resolve().parent.parent
-    return any(root.glob("Lib/site-packages/sageattention/__init__.py")) or         any(root.glob("lib/python3*/site-packages/sageattention/__init__.py"))
+    # not only the resolved path: on Linux a venv's bin/python links to /usr/bin/python3.x, whose parent.parent is /usr
+    py = Path(cfg["python"])
+    for root in dict.fromkeys((py.parent.parent, py.resolve().parent.parent)):
+        if any(root.glob("Lib/site-packages/sageattention/__init__.py")) or \
+                any(root.glob("lib/python3*/site-packages/sageattention/__init__.py")):
+            return True
+    return False
 
 
 NEXT_FAMILIES: list[str] | None = None   # set by server.ensure_family for the restart it is about to do

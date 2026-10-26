@@ -28,7 +28,10 @@ def _flags(breakaway: bool) -> dict:
 
 def _popen(cmd: list[str], **kw) -> tuple[subprocess.Popen, bool]:
     """(process, left the parent's job object). Without the breakaway, a job object that kills its
-    processes when it closes can still stop the worker: the caller reports that as a warning."""
+    processes when it closes can still stop the worker: the caller reports that as a warning. POSIX has no job
+    objects: a new session (start_new_session) is already independent."""
+    if not WIN:
+        return subprocess.Popen(cmd, **kw, **_flags(True)), True
     try:
         return subprocess.Popen(cmd, **kw, **_flags(True)), WIN
     except OSError:                        # the job object does not allow a breakaway

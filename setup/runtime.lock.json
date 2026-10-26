@@ -40,8 +40,8 @@
   "sha256": "96f6c181a30f4950607839dc84d42a354b250d8a0231b098b59b7bc69c351c48"
  },
  "pod": {
-  "image": "a stock RunPod PyTorch image (Ubuntu 22.04/24.04, Python >= 3.10); record its exact tag and digest here after the first successful test",
-  "volume": "a network volume mounted at /workspace for the models (8gb tier ~150 GB, large tier ~220 GB) and the cinestudio home",
+  "image": "a stock RunPod PyTorch image for CUDA 13.0 on Ubuntu 24.04 with Python 3.12+ (proposed: runpod/pytorch:1.4.2-rc.184-cu1300-torch2121-ubuntu2404); record its exact tag and digest here after the first successful test",
+  "volume": "a network volume mounted at /workspace for the models (8gb tier 155.6 GB, large tier 233.3 GB), the runtime and the cinestudio home: 200 GB (8gb) / 300 GB (large)",
   "access": "the app listens on 127.0.0.1:8765: use an SSH tunnel (ssh -L 8765:127.0.0.1:8765 ...)"
  }
 }
