@@ -164,6 +164,13 @@ DEFAULTS = {"quality": "preview", "seed": 333, "ingredients_strength": 1.0, "con
             #                             than its look, so the scene darkened at every join). DEFAULT since 2026-10-23
             #                             (user: "a must fix"): with the exact frame_png, drift clip 3 - clip 1 -0.28
             #                             (F1b) and -0.29 (P1) against -1.18 (run A) and -3.39 (anime); "off" = as made
+            "chain_grade": "match",     # the stitch: each clip after the first is graded (RGB x one gain) so that the
+            #                             background of its shared frames matches the clip before ("off" = as made;
+            #                             old manifests without the key). LTX makes every clip ~0.3-0.6 L lighter or
+            #                             darker than the still it is given (r20261027-005603-a08c: background L 10.53
+            #                             -> 10.80 -> 11.40, each clip flat inside): the steps sit at the joins and the
+            #                             input guards (chain_light) cannot remove them (user, 2026-10-27: "why does it
+            #                             keep getting brighter or darker between clips")
             "chain_light_ref": "clip1",  # chain_light: the picture that the chained frame is held to. "clip1" (DEFAULT
             #                             since 2026-10-27) = clip 1's own first frame; "look" (old manifests without
             #                             the key) = the run's first look image. With "look" the scene got BRIGHTER at
@@ -2498,7 +2505,7 @@ def run_details(run_id: str) -> dict:
 # a retake keeps it too (TAKE_FIELDS)
 FORK_FIELDS = ("video", "style", "describe_facing",
                "look_chain", "chain_colour", "adain", "adain_ref", "keyframe", "relay_strength", "clip_text",
-               "chain_light", "chain_light_ref", "chain_sharpen_mode", "chain_sharpen_target", "audio_relay", "props",
+               "chain_light", "chain_light_ref", "chain_grade", "chain_sharpen_mode", "chain_sharpen_target", "audio_relay", "props",
                "prop_images",
                "clip_videos")                          # {clip: ACTIONS} for the clips the fork makes ("" = none)
 PATH_FIELDS = {"control", "control_full", "source", "sheet", "clip", "clips", "final", "contact_sheet", "first_image"}
@@ -2549,7 +2556,7 @@ def fork_run(run_id: str, from_clip: int, note: str | None = None, **changes: An
         raise RunError(f"a fork can change only {list(FORK_FIELDS)}, not {sorted(unknown)}")
     for key, allowed in (("look_chain", LOOK_CHAINS), ("chain_colour", CHAIN_COLOURS), ("adain_ref", ("look", "clip1")),
                          ("keyframe", ("on", "off")), ("chain_light", ("off", "look", "tone")),
-                         ("chain_light_ref", ("look", "clip1")),
+                         ("chain_light_ref", ("look", "clip1")), ("chain_grade", ("off", "match")),
                          ("chain_sharpen_mode", ("fixed", "match")), ("audio_relay", ("off", "carry"))):
         if key in changes and changes[key] not in allowed:
             raise RunError(f"{key.replace('_', ' ')} must be one of {list(allowed)}")
@@ -2701,7 +2708,7 @@ def _fork_locked(run_id: str, src: Path, from_clip: int, note: str | None, chang
         if changes.get("describe_facing") is not None:
             m2["describe_facing"] = bool(changes["describe_facing"])
         for k in ("look_chain", "chain_colour", "adain", "adain_ref", "keyframe", "relay_strength", "chain_light",
-                  "chain_light_ref", "chain_sharpen_mode", "chain_sharpen_target", "audio_relay"):              # (chain_light/chain_sharpen_mode were missing: a fork kept the old
+                  "chain_light_ref", "chain_grade", "chain_sharpen_mode", "chain_sharpen_target", "audio_relay"):              # (chain_light/chain_sharpen_mode were missing: a fork kept the old
             if changes.get(k) is not None:              # values, 2026-10-23) the chain options of the drift ablation
                 m2[k] = changes[k]
         if m2.get("audio_relay") == "carry" and m2.get("relay") != "latent":
@@ -4335,10 +4342,74 @@ class Run:
                            "camera_azimuth_deg": fmt.get("camera_azimuth_deg")}
         return None
 
+    def _grade_clips(self, clips: list, out: dict, step: dict) -> list:
+        """chain_grade "match": the luma of clip k (k >= 2) is multiplied by one gain so that the mean grey of the
+        background (outside the character's grown mask) of its shared frames matches the same frames of clip k-1 as
+        graded (the gains add up, each limited to +-15%). The clips stay in their own YUV form (an RGB copy read ~4%
+        brighter in the stitch); clip 1 is never changed; the originals stay, the graded copies go to work/graded/.
+        A gain cannot fix a changed spread of the light (in r20261027-005603-a08c the later clips have a lighter floor
+        and a darker wall). -> the clip files to stitch."""
+        ov, frames = int(out.get("overlap", 1)), int(out["frames"])
+        if ov < 5:
+            step["grade"] = {"skipped": f"overlap {ov}: too few shared frames to measure"}
+            return clips
+        try:
+            masks = passes.load(self.pass_dir).get("mask") or []
+        except (OSError, ValueError, KeyError):
+            masks = []
+        gdir = self.work / "graded"
+        gdir.mkdir(parents=True, exist_ok=True)
+        probe = gdir / "probe.png"
+        sample = list(range(2, ov - 1, 4))
+        maps, rec, graded = [(1.0, 0.0)], [{"clip": 1, "a": 1.0, "b": 0.0}], [clips[0]]
+        for k in range(2, len(clips) + 1):
+            s0 = video.clip_start(k, frames, ov)
+            prev, this, why = [], [], None
+            for i in sample:
+                mk = masks[s0 + i] if s0 + i < len(masks) else None
+                video.frame_png(clips[k - 2], probe, frames - ov + i)
+                lp, w1 = video.background_levels(probe, mk)
+                video.frame_png(clips[k - 1], probe, i)
+                lt, w2 = video.background_levels(probe, mk)
+                prev.append(lp)
+                this.append(lt)
+                why = why or w1 or w2
+            p_lo, p_hi, p_m = (float(np.median([x[j] for x in prev])) for j in (0, 1, 2))
+            t_lo, t_hi, t_m = (float(np.median([x[j] for x in this])) for j in (0, 1, 2))
+            pa, pb = maps[-1]                               # clip k-1 as graded
+            g_lo, g_hi = pa * p_lo + pb, pa * p_hi + pb
+            # ONE gain from the means (a = mean ratio, b = 0): matching the dark and light halves separately
+            # (gain + offset) followed the lamps, signs and court lines that LTX draws differently in every clip
+            # (clip 3 got a = 0.83: its wall went 36 -> 29 grey)
+            a = float(min(1.15, max(0.85, (pa * p_m + pb) / max(1.0, t_m))))   # the plain means (the halves split at
+            #                                                  the median are of unequal size: their average is biased)
+            b = 0.0
+            if abs(a - 1.0) < 0.003 and abs(b) < 0.3:
+                a, b = 1.0, 0.0
+                graded.append(clips[k - 1])
+            else:
+                dst = gdir / f"clip_{k}.mp4"
+                video.levels_yuv(clips[k - 1], dst, a, b)
+                graded.append(str(dst))
+            maps.append((a, b))
+            rec.append({"clip": k, "a": round(a, 4), "b": round(b, 2), "prev_mean": round(pa * p_m + pb, 2),
+                        "mean": round(t_m, 2), "prev_levels": [round(g_lo, 1), round(g_hi, 1)],
+                        "levels": [round(t_lo, 1), round(t_hi, 1)], "region": why or "background"})
+        probe.unlink(missing_ok=True)
+        step["grade"] = rec
+        self.event("chain_grade", maps=[[r["a"], r["b"]] for r in rec])
+        return graded
+
     def step_final(self, step: dict) -> None:
         out = self.st["steps"]["clip"]["outputs"]
         clips = out.get("clips") or [out["clip"]]
         tmp = self.d / "final.tmp.mp4"
+        if len(clips) > 1 and self.m.get("chain_grade", "off") == "match":
+            try:
+                clips = self._grade_clips(clips, out, step)
+            except Exception as exc:  # noqa: BLE001 - never fail a run over its grade: the clips as made
+                step["grade"] = {"skipped": f"the grade could not run: {exc}"[:300]}
+                self.event("chain_grade", skipped=step["grade"]["skipped"])
         if len(clips) > 1:          # join on the shared frame; cut the held frames after the shot's end
             video.stitch(clips, tmp, out["fps"], total_frames=out["shot_frames"], overlap=int(out.get("overlap", 1)),
                          audio_join=(lambda j: j if len(j) == len(clips) - 1 else "fade")(self._audio_join()))

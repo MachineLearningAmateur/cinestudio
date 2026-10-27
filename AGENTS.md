@@ -652,8 +652,16 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   final), `chain_light tone` (lightness, chroma and contrast of the background held to clip 1's own first frame:
   `chain_light_ref clip1`, default since 2026-10-27; old runs held it to the LOOK image, which the video never reaches
   (clip 1 ~8 L darker), so every join was pushed up by the full +10% clamp and the scene got brighter: 308e grey 26.5 ->
-  28.0 -> 32.3, the floor 25.5 -> 36), AdaIN 0.3 toward clip 1's
-  latent. Joins are flow cross-faded.
+  28.0 -> 32.3, the floor 25.5 -> 36), AdaIN 0.3 toward clip 1's latent. **The stitch grades each join (`chain_grade match`, default since
+  2026-10-27; runner._grade_clips):** LTX makes every clip ~0.3-0.6 L lighter or darker than the still it is given,
+  each clip flat inside, so the steps sit at the joins and no input guard removes them (r20261027-005603-a08c:
+  background L 10.53 -> 10.80 -> 11.40). Clip k's luma x ONE gain so that the background mean of its 25 shared frames
+  matches clip k-1 as graded (cumulative, +-15%; clip 1 unchanged; graded copies in work/graded/, the clips kept).
+  Measured on a08c (mean grey clip 1/2/3): 27.5/27.9/29.3 -> 27.5/26.4/26.6; floor 25.4/26.9/28.9 -> 25.4/25.6/26.4.
+  Pitfalls: grade in the clips' own YUV form (an RGB copy next to YUV clips read ~4% brighter in the stitch); match
+  the plain MEANS (8-bit percentiles are too coarse; dark/light halves followed lamps and signs: a 0.83 gain; halves
+  split at the median are biased). Limit: one gain cannot undo a changed spread (the later clips have a lighter floor
+  and a darker wall: after the grade the wall reads ~10% darker by clip 3). Joins are flow cross-faded.
 - **Test runs in PREVIEW** (stage 1 only, 768x448, ~half the time, below the 8 GB peak); render one chosen setting at
   final with the same seed for a demo. 1024x576 runs out of memory on 8 GB.
 - Write the costume's garment lengths into `--look-text` when the description and the sheet disagree (the look image

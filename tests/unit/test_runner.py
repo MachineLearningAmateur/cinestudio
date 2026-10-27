@@ -1773,3 +1773,10 @@ def test_new_runs_hold_the_chained_light_to_clip_1():
     came out ~8 L darker); every join was pushed up by the full clamp and the scene got brighter. New runs hold it to
     clip 1's own first frame; old manifests (no key) keep the look."""
     assert runner.DEFAULTS["chain_light_ref"] == "clip1"
+
+
+def test_new_runs_grade_the_clip_joins():
+    """2026-10-27: each LTX clip came out 0.3-0.6 L lighter than the still it was given (the steps sit at the joins);
+    new runs grade every clip after the first to the clip before (chain_grade "match"); old manifests keep "off"."""
+    assert runner.DEFAULTS["chain_grade"] == "match"
+    assert "chain_grade" in runner.FORK_FIELDS

@@ -129,6 +129,45 @@ def frame_png(src: str | Path, dst: str | Path, index: int, width: int | None = 
     _run(["-i", str(src), "-vf", vf + ",format=rgb24", "-frames:v", "1", str(dst)])
 
 
+def background_levels(img_path: str | Path, mask_path=None) -> tuple[list, str | None]:
+    """The dark and light levels of a frame's background (outside the character's grown mask, _region): the mean grey
+    (0..255, the exact read: frame_png) of its darker half and of its lighter half (percentiles of 8-bit greys are
+    whole numbers: too coarse for steps of ~1 grey) and the plain mean. -> ([dark, light, mean], reason): reason
+    None = a real background,
+    else the whole picture."""
+    import cv2
+    import numpy as np
+    im = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
+    if im is None:
+        raise ValueError(f"cannot read {img_path}")
+    bg, why = _region(mask_path, im.shape)
+    x = im[bg].astype(float)
+    m = float(np.median(x))
+    lo, hi = x[x <= m], x[x > m]
+    return [float(lo.mean()), float(hi.mean() if hi.size else lo.mean()), float(x.mean())], why
+
+
+def levels_yuv(src: str | Path, dst: str | Path, a: float, b: float) -> None:
+    """A copy of a clip with its luma mapped grey' = a * grey + b (grey = the full-range value of the luma; the chroma
+    and the audio are kept, the colour tags copied): the brightness grade of a clip join (runner chain_grade). The
+    clip stays in its own form (yuv420p, limited range): an RGB copy next to the YUV clips read ~4% brighter in the
+    stitch (2026-10-27)."""
+    import re
+    head = subprocess.run([ffmpeg(), "-hide_banner", "-nostdin", "-i", str(src)], capture_output=True, text=True,
+                          stdin=subprocess.DEVNULL).stderr
+    mt = re.search(r"yuv\w*\((tv|pc), ([\w-]+)/([\w-]+)/([\w-]+)", head)
+    tags = dict(zip(("color_range", "color_space", "color_primaries", "color_transfer"), mt.groups())) if mt else {}
+    off = float(b) * 219.0 / 255.0
+    expr = f"clip(16+(val-16)*{float(a):.5f}+{off:.4f},16,235)"
+    args = ["-i", str(src), "-vf", f"lutyuv=y='{expr}'", "-map", "0:v:0", "-map", "0:a?", "-c:v", "libx264",
+            "-crf", "10", "-preset", "medium", "-pix_fmt", "yuv420p", "-c:a", "copy"]
+    for k, flag in (("color_range", "-color_range"), ("color_space", "-colorspace"), ("color_transfer", "-color_trc"),
+                    ("color_primaries", "-color_primaries")):
+        if tags.get(k) and tags[k] != "unknown":
+            args += [flag, tags[k]]
+    _run(args + [str(dst)])
+
+
 def sharpness(img) -> float:
     """Laplacian variance of a picture (BGR array or a file): the sharpness measure of `run score`."""
     import cv2
