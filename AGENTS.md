@@ -364,6 +364,15 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
     head; modelled in the live Blender through the Blender MCP against reference planes, judged in a Cycles look
     render beside the sheet; the kit copy matte with the measured hair colour). The Mannequin view's cache key
     includes the head file (mannequin_preview._asset_sig). Not yet tried in a video run.
+    masked's head is a v3 model too (2026-10-27, user: "run the same gaunlet for masked 3d's head";
+    .cinestudio/gauntlet/kit_masked3d: tools/fit_masked_v3.py, m3_head.py, m3_hair.py, RESULTS.md): a mask shell lofted
+    over the measured mask region (thickness grown BACKWARD, the inner shell dark), a head volume carved behind it, a
+    bob of clumps from a crown whorl and ONE fringe sheet ending on the measured diagonal edge. Lessons: draw a mask's
+    eye holes as ALMOND decals between the measured corners (outlines measured from shaded pixels came out blobby; cut
+    holes tore after the rounding); keep a decal on the mask (a point past its edge stood out as a fin from the side);
+    a grey half in the sheet is drawn LIGHT (the side view shows it white): paint only a strip by the ridge; Cycles
+    look renders on the CPU next to a FINAL LTX run crashed ComfyUI: render after the run. Blind critics: 7 and 6/10
+    vs 4 and 3.5/10 for the ring-loft kit.
   - The ring-loft fitted head also gained `paint` / `paint_side` (mark polygons), `ears`, `cap`, `helmet_v`, `band`,
     `hair_below` / `hair_drop`, `snout`, `chin_cap` (proxy_kit.fitted_head); masked keeps its ring head.
   - Other kit parts stay available when a garment does render wrong: `jacket.open` (0..0.9) opens the front;
