@@ -99,6 +99,7 @@ def _file_areas() -> dict[str, Path]:
     """The folders whose pictures, videos and sounds the app may serve (by area name)."""
     from .. import background as _background
     return {"characters": character.library(), "props": runner.home() / "props",    # the prop library (props.py)
+            "characters_builtin": character.BUILTIN,                         # the built-in characters (read-only)
             "runs": runner.runs_dir(), "shots": runner.home() / "shots",
             "builtin": shots.builtin_dir(),
             "backgrounds": runner.home() / "backgrounds",

@@ -113,11 +113,12 @@ workflows/                  the BUILT-IN ComfyUI graphs: <name>_api.json + <name
 templates/                  library/<name>/ = BUILT-IN templates (shot.blend with packed sound, preview.mp4, shot.json);
                             the other folders are generator scripts (flash_step, funk_dance, shan_shen_bu_props, ...)
 backgrounds/library/        BUILT-IN backgrounds (plate.png or pano.png, bg.json, set.png), read-only
+characters/library/         BUILT-IN characters (character.json with ./ paths + front, views, sheet; kit inside), read-only
 styles/library/             BUILT-IN styles (<name>.json)
 setup/                      install (install_linux.sh, requirements, runtime.lock.json), models.json (pinned model
                             files per tier), graph generators (make_layout_graphs.py, make_redraw_graphs.py,
                             make_txt2img_graphs.py),
-                            export_template.py, measuring tools (brightness_check, join_check, dwpose_score, ...)
+                            export_template.py, export_character.py (a user character -> built-in), measuring tools (brightness_check, join_check, dwpose_score, ...)
 docs/                       research reports (*_research.md, with sources), CREDITS.md, MODELS.md, RUNPOD.md,
                             gauntlet_critic.md, IDEAS.md (untested ideas), TEMPLATE_GUIDE.md (authoring templates)
 tests/unit/                 pytest (no GPU, no Blender); tests/integration/: manual scripts, not collected
@@ -126,7 +127,7 @@ tests/unit/                 pytest (no GPU, no Blender); tests/integration/: man
                             cache/, gauntlet/ (experiments + RESULTS.md), backup/, uploads, settings.json, secrets.json
 ```
 
-A built-in and a user item with the same name: the USER's copy wins (templates, backgrounds, styles). New built-in
+A built-in and a user item with the same name: the USER's copy wins (templates, backgrounds, styles, characters). New built-in
 assets go into the repo folders above; private results stay in .cinestudio (.gitignore lists what never ships).
 
 ## 2. Hard rules (do not break these)
@@ -180,6 +181,18 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   the ID is made from it (`character.new_id`: lowercase, other characters -> "-", -2/-3 when taken). The app's rename
   changes only the display name; `character rename` changes the ID (the folder moves). Never use the display name in a
   path, a prompt or a job.
+- **Built-in characters (2026-10-26, user: "move it in as a built in character ... ship it in with proxy kits
+  too"):** `characters/library/<id>/` in the repo (character.json with RELATIVE paths `./front.png`, the front,
+  views, face and sheet; the body and the proxy kit inside the record), read-only like the built-in templates,
+  backgrounds and styles: character.load resolves the paths and marks `builtin`; every change (edits, kit, body,
+  rename, delete, style) is refused (`refuse_builtin`); a user character of the same ID wins; new IDs skip built-in
+  IDs (`masked` -> `masked-2`); skins of a built-in are allowed (a new record). Built-ins: `masked` ("Masked",
+  anime_noir, the fitted-head kit), `kitsune` ("Kitsune", anime_cel, chibi body, the ring-loft kitsune kit) and its skin
+  `kitsune-3d` ("Kitsune 3D", 3d_animated, the v3 modelled head `./head_asset.blend`; 2026-10-27, user: "make kitsune
+  a built in char"). To change a built-in: edit its folder in the repo (or make a copy as a user character). Export:
+  `python setup/export_character.py NAME [--display-name T] [--note T]` (copies only the record's files and a kit's
+  head asset, writes `./` paths, drops candidates/edits/checks and personal paths, refuses on a path left); then move
+  the user's own folder to .cinestudio/backup (while it exists it hides the built-in).
 - **Ready for a Blender video** = status `ready` (views + sheet finished), not `sheet_stale`, and a **mannequin body**
   (`character.video_missing`; {} = the template's body counts as set). The proxy kit is optional. `run new` refuses a
   Blender shot with any character that is not ready; the app lists such characters disabled with the reason.
@@ -304,6 +317,57 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   head reads the same from the front and the back, and the video turned characters away. A short hair cap that leaves
   the back of the head white looks like a second blank face: use hair "medium" or a `back`.
 - Check the kit from front, side and back (`preview_mannequin`) before a run.
+- **Kit gauntlet (2026-10-26, user: "make sure it looks very similar to our reference images"):**
+  `.cinestudio/gauntlet/kit_masked/tools/kit_eval.py CHARACTER CANDIDATES.json OUT` renders each candidate kit with the
+  REPOSE camera and the character's body (proxy_kit.py + render_turnaround.py, Cycles CPU), so the character's own
+  views line up, and scores colour classes (white/purple/hair/dark) per view and for the head; `calibrate.py` compares
+  rendered with reference colours; `eyes.py` measures the eye holes inside the mask. Change ONE thing per candidate,
+  then a blind critic (anonymous tags). RESULTS.md there. Lessons, for every kit:
+  - **Kit only what the video draws wrong (user, 2026-10-26: "it's mainly the mask"; "i dont really like the straps"):**
+    the mask with its eye holes, the hair that frames it, the head and neck. The clothes render well from the sheet and
+    the look image; bandage tubes made earlier renders worse. (A full costume kit scored higher on colour classes,
+    0.37 vs 0.09, but that is not the goal.)
+  - The kit material has NO specular shine and the eye holes are pure black (proxy_kit.clay, since 2026-10-26): the
+    old 0.5 shine turned the dark plum hair grey-lavender, and the 0.03 eye material rendered mid-grey.
+  - The mask: `mask.top` must not cut through the eye holes (`mask.eye_height`, default 0.12 head radii; masked
+    -0.04); a pointed chin needs `mask.chin_back` (~0.6), or it is a forward blade from the side (the "beak" the
+    video drew); keep `mask.depth` 1 (0.8 let the head poke through the mask); `mask.width`/`length` shape it.
+  - `hair.cover: true` paints the mannequin's own head in the hair colour (only the mask stays light): a white head
+    beside or behind the hair reads as a second face. `head.neck` = a dark collar colour (a white neck merges with a
+    white mask's chin). `head.width/length/depth` reshape the ball head (masked: a smaller head was worse).
+  - **The kit's OWN fitted head (`head.fit`, 2026-10-26, user: "making the headshape part of the proxy kit"):**
+    `.cinestudio/gauntlet/head_masked/fit_head.py CHARACTER OUT.json` measures the character's views (front, right)
+    in the frame of its repose mannequin render: the head outline, the mask region (front width, how far back it
+    wraps from the side) and the eye-hole outline, in head units; the kit then builds a hair loft + a separate mask
+    loft with black eye faces and hides the ball head (proxy_kit.fitted_head; `fit.eye_scale` 1.3 so the eyes read
+    at the ~37 px video size). Mask options (10 blind rounds on masked, .cinestudio/gauntlet/kit_masked/RESULTS.md):
+    `round_top` (a broad arch under a fringe, not a spike), `ridge` ~0.12 + `shade` ~0.83 / `shade_side` (the
+    reference's centre crease with one darker half: a flat white mask reads as a card), `proud` ~0.15 (the mask stands
+    out of the hair), `chin_drop` ~0.12, the eye a clean ALMOND fitted to the measured eye (fit_head.py) at
+    `eye_scale` ~1.25 (1.15 read as slits, 1.35 as alien eyes); keep `asymmetric` false (the fringe's line looked
+    torn). masked (H14): critic 6-7/10 vs 4/10 for the ellipsoid mask. Open: the side profile (a short shell; the
+    chin not long enough), bob volume and a fringe.
+  - **A MODELLED head (`head.asset`, 2026-10-26, user: "construct the head seperately and then throw it onto the
+    head"):** `{"head": {"asset": {"file": "<path>.blend"}}}` appends every mesh of a .blend made in HEAD UNITS (head
+    centre at the origin, radius 1, face toward -Y), scales it to the mannequin head and parents it to the head bone
+    (proxy_kit.head_asset; the ball head is hidden; mask/hair parts are not built). For shapes the ring loft cannot
+    make (a fox mask: ears with depth, a snout, cords, hair clumps): kitsune-3d's head is built by
+    `.cinestudio/gauntlet/kit_kitsune3d/tools/build_kitsune_head.py FIT PARAMS OUT` from its measured fit
+    (fit_head_kitsune.py: the dome split, ears, paint polygons front and side, the band colour) as overlapping
+    primitives joined by a VOXEL REMESH + smooth (no ledges between ears and dome). Blind critics in both column
+    orders: the modelled head (A2) 6-6.5/10 beat the best ring kit 4-5/10; the ring method had plateaued (~6/10, its
+    winners flipped with the column order); the old kit 3/10 (RESULTS.md there). A face mask covers only the FACE:
+    the back view must show hair (kitsune-3d's back view had a white shell over the head: corrected by a region
+    edit, 2026-10-26, user), and the head then follows it (A8: a hair dome, the ear tips and the cord on the hair).
+    Since 2026-10-27 kitsune-3d's head is the v3 MODEL (tools/v3_mask.py, v3_split.py, v3_marks.py, v3_cords.py,
+    v3_hair.py: a mask SHELL with its ears and traced decals, worn on a separate head, the hair growing from the
+    head; modelled in the live Blender through the Blender MCP against reference planes, judged in a Cycles look
+    render beside the sheet; the kit copy matte with the measured hair colour). The Mannequin view's cache key
+    includes the head file (mannequin_preview._asset_sig). Not yet tried in a video run.
+  - The ring-loft fitted head also gained `paint` / `paint_side` (mark polygons), `ears`, `cap`, `helmet_v`, `band`,
+    `hair_below` / `hair_drop`, `snout`, `chin_cap` (proxy_kit.fitted_head); masked keeps its ring head.
+  - Other kit parts stay available when a garment does render wrong: `jacket.open` (0..0.9) opens the front;
+    `bands` as 4-5 thin wraps on one bone read as wrapped (one tube reads as a sleeve or a boot).
 
 ### 4.8 Fixes in code (touch_up) and pitfalls
 - Exact small fixes are better in code (OpenCV) than by the model; save with `character.touch_up(name, image, note,
@@ -471,6 +535,12 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
     (r20261025-130232-5475): no giant ball; the 20-35 px balls looked the same (no seam detail at that size); joins
     1.7/2.7x vs 1.8/2.8x. So: small props get WORDS only (the Blender shape and colour carry them); a prop picture only
     for a large, detailed prop, and never with the dev model until tested again.
+  - **Confirmed 2026-10-26 (masked, built-in kit, seed 303, final, distilled):** with the panel clip 3 had a still
+    giant ball in the frame's bottom-right corner (r20261026-035007-8d6b); without it none (r20261026-035011-a791).
+    Cause (docs/prop_control_research.md): the sheet guide shares the video's (t, x, y) positions, so the sheet's
+    bottom-right panel lines up with the frame's bottom-right. Levers: props readable in the LAYOUT (48-64 px on
+    screen, 16-24 frames in view, clear value contrast; 25 px balls came out as dots), short prop words, no panel for
+    small props; a panel for a large prop only with an attention mask (untested).
 - Import a .blend (collection `Mannequin`, rig `MannequinRig`, a camera) or a stand-in video in the Templates tab.
 - A real 3D character instead of the mannequin: bpy_jobs/swap_character.py bakes the mannequin's motion onto a rigged
   character with the cinestudio bone names.
@@ -551,9 +621,29 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   mannequin -> the character, its description and `--look-text`) at frame -1 sets the palette and materials; the
   Ingredients 2.5 IC-LoRA at 1.0 carries the sheet; no skeleton. Keyframe looks `auto` (one per clip at its middle when
   the body turns >= 30 deg; a back-view clip uses the sheet's back panel; side views add the sheet's side panel).
+- **The look image keeps the room (`look_pin`, default for new runs since 2026-10-26; cinestudio/look_pin.py,
+  docs/look_image_research.md):** the plain look edit redrew the WHOLE frame and, by chance per run (Qwen is not
+  reproducible on this PC even with identical inputs and seed), lost the hoop, a printed banner and the EXIT signs;
+  the video followed it (frame 0 is 12.8/255 from the look, 19.7/255 from the layout). Now: the frame goes to Qwen at
+  1344x784 without the Kontext centre crop (every old look was ~0.7% smaller and shifted); the figure mask (dilated
+  3% + a soft ring + a contact-shadow ellipse) is a latent noise mask (SetLatentNoiseMask + DifferentialDiffusion, no
+  pixel paste); a CPU gate (ECC fit, SSIM, edge recall, lost tiles outside the figure, at 768 px) makes the look again
+  with seed+1 (at most 3 tries, the best kept; state `look_checks`, events `look_check`). Gate limits from 4 old looks:
+  kept rooms SSIM 0.957-0.966 / recall 0.83-0.86 / 15-21 lost tiles; the failed one 0.770 / 0.64 / 41. Old manifests
+  keep the plain edit. Several characters still use crop and stitch.
+  **Never give LTX a look that lines up with the layout pixel for pixel:** the first pinned final came out ~35%
+  darker (banners blank at final). Diagnosis (2026-10-26, preview clip 1, seed 303, fixed look files,
+  .cinestudio/gauntlet/look_pin_ab/RESULTS.md): aligned look 27.9 / 27.0 mean brightness (the same file twice: LTX
+  repeats itself within 1.6/255), the old unaligned look 42.7, aligned + moved 6/4 px 39.9, aligned + resized 39.5,
+  new figure on the old background 39.8, aligned + blurred 30.5. So the cause is the exact alignment, not the VAE
+  texture. The kept look is now moved 6 px right and 4 px down at 1344x784 (look_pin.offset, state `look_offsets`,
+  event `look_offset`); the gate's tries keep the unmoved picture.
 - Long shots: 121-frame clips with 25 shared frames; latent relay (clip k-1's last latents as a guide), `look_chain prev`
   (the previous clip's frame at this clip's start as its look, sharpened to clip 1's sharpness x1.5 preview / x1.0
-  final), `chain_light tone` (lightness, chroma and contrast of the background held to clip 1), AdaIN 0.3 toward clip 1's
+  final), `chain_light tone` (lightness, chroma and contrast of the background held to clip 1's own first frame:
+  `chain_light_ref clip1`, default since 2026-10-27; old runs held it to the LOOK image, which the video never reaches
+  (clip 1 ~8 L darker), so every join was pushed up by the full +10% clamp and the scene got brighter: 308e grey 26.5 ->
+  28.0 -> 32.3, the floor 25.5 -> 36), AdaIN 0.3 toward clip 1's
   latent. Joins are flow cross-faded.
 - **Test runs in PREVIEW** (stage 1 only, 768x448, ~half the time, below the 8 GB peak); render one chosen setting at
   final with the same seed for a demo. 1024x576 runs out of memory on 8 GB.
@@ -586,6 +676,15 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
 - One paragraph of present-tense prose, ~4-8 sentences: style, shot + place + light, the character, the action in time
   order, the camera, the sound; restrained words. Name the SAME place and light as the background. Never name the
   control type ("depth map", "skeleton"). Text that contradicts the layout can cause cuts.
+- **Text in the set: quote it in the prompt, every sign (2026-10-26, user: "call out the text in prompting").** LTX's
+  VAE packs 32x32 px into one latent cell, so letters ~20-40 px tall at final are about one cell: without the words
+  the video guessed them again ("Pomfy", "Ppen Source", EXIT signs as "SAIT"), although the look image and the layout
+  had clean text. Final runs, seed 303, the same look files (r20261026-110407-838f / -165726-39b8 / -191306-6c13):
+  no text named -> both banners wrong; the banners quoted -> both right in all 3 clips, but the unquoted EXIT signs
+  copied the banner words ("COMY", "ETW") and the video was ~15% darker; the banners AND `small green signs above both
+  doors read "EXIT"` quoted, light "evenly lit by soft violet light" -> every sign right in all clips, ~5-9% darker
+  than without text. Quote EVERY visible sign (a sign left out takes another sign's words). A built-in template
+  keeps its sign text in `clip_context` (shan_shen_bu_balls since 2026-10-26).
 - **Every segmented shot gets ONE PROMPT PER CLIP (the default; user rule, 2026-10-25).** A shot longer than one clip is
   cut into clips (clip k = frames 96(k-1)+1 .. +121, 25 frames shared). Each clip's action text describes ONLY what that
   clip's frames of the Blender render show, in time order: read the rig timeline (`shot timeline NAME`: events with

@@ -105,6 +105,9 @@ DEFAULTS = {"quality": "preview", "seed": 333, "ingredients_strength": 1.0, "con
             #                             and a LOOK image (the first frame with the character, Qwen-Image-Edit) sets the
             #                             look (LTX-2.5; the distilled gauntlet's winner 2026-10-21: anime, best motion)
             "look_extra": None,         # layout: words added to the look image's instruction (e.g. a garment length)
+            "look_pin": True,           # layout: the look image keeps the room (cinestudio/look_pin.py, 2026-10-26):
+            #                             no centre crop, the figure mask as a latent noise mask, a background gate
+            #                             with up to 3 seeds. Old manifests without the key: the plain whole-frame edit
             "clip_frames": None,        # the longest clip (8k+1, 49..257; None = MAX_CLIP_FRAMES 121): longer clips =
             #                             fewer joins (a 360-frame shot: 4 clips at 121, 2 at 193)
             "relay": None,              # None = "latent" for layout runs, "off" otherwise. Layout long shots: "latent" = clip k > 1 continues from clip k-1's own LATENTS
@@ -161,6 +164,13 @@ DEFAULTS = {"quality": "preview", "seed": 333, "ingredients_strength": 1.0, "con
             #                             than its look, so the scene darkened at every join). DEFAULT since 2026-10-23
             #                             (user: "a must fix"): with the exact frame_png, drift clip 3 - clip 1 -0.28
             #                             (F1b) and -0.29 (P1) against -1.18 (run A) and -3.39 (anime); "off" = as made
+            "chain_light_ref": "clip1",  # chain_light: the picture that the chained frame is held to. "clip1" (DEFAULT
+            #                             since 2026-10-27) = clip 1's own first frame; "look" (old manifests without
+            #                             the key) = the run's first look image. With "look" the scene got BRIGHTER at
+            #                             every join (r20261026-202634-308e, 838f, a791): clip 1 came out ~8 L darker than
+            #                             its look (L 11.6 vs 20.0), so every chained frame was pushed up by the full
+            #                             +10% clamp, contrast and chroma +15%, and the video followed (grey 26.5 ->
+            #                             28.0 -> 32.3; the floor 25.5 -> 29.4 -> 36)
             "chain_sharpen_target": None,  # chain_sharpen_mode match: the target = clip 1's median sharpness x this.
             #                             None = by quality: preview 1.5 (a stage-1 clip comes out at ~0.65x its look's
             #                             sharpness: P2 at 1.0 -> clips at 0.7x clip 1, P3 at 1.5 -> clip 1's level),
@@ -2488,7 +2498,8 @@ def run_details(run_id: str) -> dict:
 # a retake keeps it too (TAKE_FIELDS)
 FORK_FIELDS = ("video", "style", "describe_facing",
                "look_chain", "chain_colour", "adain", "adain_ref", "keyframe", "relay_strength", "clip_text",
-               "chain_light", "chain_sharpen_mode", "chain_sharpen_target", "audio_relay", "props", "prop_images",
+               "chain_light", "chain_light_ref", "chain_sharpen_mode", "chain_sharpen_target", "audio_relay", "props",
+               "prop_images",
                "clip_videos")                          # {clip: ACTIONS} for the clips the fork makes ("" = none)
 PATH_FIELDS = {"control", "control_full", "source", "sheet", "clip", "clips", "final", "contact_sheet", "first_image"}
 
@@ -2538,6 +2549,7 @@ def fork_run(run_id: str, from_clip: int, note: str | None = None, **changes: An
         raise RunError(f"a fork can change only {list(FORK_FIELDS)}, not {sorted(unknown)}")
     for key, allowed in (("look_chain", LOOK_CHAINS), ("chain_colour", CHAIN_COLOURS), ("adain_ref", ("look", "clip1")),
                          ("keyframe", ("on", "off")), ("chain_light", ("off", "look", "tone")),
+                         ("chain_light_ref", ("look", "clip1")),
                          ("chain_sharpen_mode", ("fixed", "match")), ("audio_relay", ("off", "carry"))):
         if key in changes and changes[key] not in allowed:
             raise RunError(f"{key.replace('_', ' ')} must be one of {list(allowed)}")
@@ -2689,7 +2701,7 @@ def _fork_locked(run_id: str, src: Path, from_clip: int, note: str | None, chang
         if changes.get("describe_facing") is not None:
             m2["describe_facing"] = bool(changes["describe_facing"])
         for k in ("look_chain", "chain_colour", "adain", "adain_ref", "keyframe", "relay_strength", "chain_light",
-                  "chain_sharpen_mode", "chain_sharpen_target", "audio_relay"):              # (chain_light/chain_sharpen_mode were missing: a fork kept the old
+                  "chain_light_ref", "chain_sharpen_mode", "chain_sharpen_target", "audio_relay"):              # (chain_light/chain_sharpen_mode were missing: a fork kept the old
             if changes.get(k) is not None:              # values, 2026-10-23) the chain options of the drift ablation
                 m2[k] = changes[k]
         if m2.get("audio_relay") == "carry" and m2.get("relay") != "latent":
@@ -3513,10 +3525,12 @@ class Run:
                            "library": step.get("library") or self.m.get("background_library")}
         return None
 
-    LOOK_INSTRUCTION = ("Replace the white wooden mannequin with the character from image 2: the same pose, the same body "
-                        "direction, the same position and size in the picture, the same arms and legs. The character "
-                        "keeps every detail from image 2: {who} {extra} Keep the camera, the place, the floor, the sky "
-                        "and the light exactly the same.")
+    # "Picture 2" = ComfyUI's own label of the second image (AGENTS 4.3); no "sky" (an indoor set has none:
+    # docs/look_image_research.md)
+    LOOK_INSTRUCTION = ("Replace the white wooden mannequin with the character from Picture 2: the same pose, the same "
+                        "body direction, the same position and size in the picture, the same arms and legs. The "
+                        "character keeps every detail from Picture 2: {who} {extra} Keep the camera, the place, the "
+                        "walls, the floor and the light exactly the same.")
 
     def step_look(self, step: dict) -> str | None:
         """Layout mode: the LOOK image = the first Blender frame (with its panorama) where Qwen-Image-Edit replaced the
@@ -3538,7 +3552,7 @@ class Run:
                 if outcome:
                     return outcome
             if not person.is_file():
-                outcome = self._qwen_look(step, "look", Path(rgb[0]), "front", person)
+                outcome = self._pinned_look(step, "look", Path(rgb[0]), self._figure_mask(0), "front", person)
                 if outcome:
                     return outcome
             if scene:                                   # the place from the text (user, 2026-10-23: "use prompt to
@@ -3573,7 +3587,8 @@ class Run:
                 view = "front" if deg < 45 else ("right" if side == "left" else "left")
                 out = self.work / f"look_k{k}.png"
                 if not out.is_file():
-                    outcome = self._qwen_look(step, f"look_k{k}", Path(rgb[shot]), view, out)
+                    outcome = self._pinned_look(step, f"look_k{k}", Path(rgb[shot]), self._figure_mask(shot), view,
+                                                out)
                     if outcome:
                         return outcome
                 keys.append({"clip": k, "frame": local, "file": str(out), "view": view, "body_deg": deg})
@@ -3653,15 +3668,15 @@ class Run:
 
     # a crop of the frame (several characters): no "sky" (a crop of a gym wall came back with a blue sky, trio_test
     # 2026-10-25); the background is named as it is in image 1
-    CROP_LOOK_INSTRUCTION = ("Replace the white wooden mannequin with the character from image 2: the same pose, the "
+    CROP_LOOK_INSTRUCTION = ("Replace the white wooden mannequin with the character from Picture 2: the same pose, the "
                              "same body direction, the same position and size in the picture, the same arms and legs. "
-                             "The character keeps every detail from image 2: {who} {extra} Keep the camera, the "
-                             "background behind the figure, the floor and the light exactly as they are in image 1.")
-    GROUP_LOOK_INSTRUCTION = ("Replace the white wooden mannequin {place} with the character from image 2: the same "
+                             "The character keeps every detail from Picture 2: {who} {extra} Keep the camera, the "
+                             "background behind the figure, the floor and the light exactly as they are in Picture 1.")
+    GROUP_LOOK_INSTRUCTION = ("Replace the white wooden mannequin {place} with the character from Picture 2: the same "
                               "pose, the same body direction, the same position and size in the picture, the same arms "
-                              "and legs. The character keeps every detail from image 2: {who} {extra} Keep the other "
+                              "and legs. The character keeps every detail from Picture 2: {who} {extra} Keep the other "
                               "figures, the camera, the background behind the figures, the floor and the light exactly "
-                              "as they are in image 1.")
+                              "as they are in Picture 1.")
 
     def character_collections(self) -> str:
         """Every character collection of the run, comma-separated (bpy_jobs/plate_world.py, pano_world.py keep them)."""
@@ -3756,7 +3771,8 @@ class Run:
         return self._comfy(step if name == "look" else step.setdefault("parts", {}).setdefault(name, {}), name, wf,
                            values, files, {wf.output_node: out})
 
-    def _qwen_look(self, step: dict, name: str, frame: Path, view: str, out: Path) -> str | None:
+    def _qwen_look(self, step: dict, name: str, frame: Path, view: str, out: Path, mask: Path | None = None,
+                   seed: int | None = None) -> str | None:
         """One look image: Qwen-Image-Edit puts the character (its `view` from the library as image 2) into `frame`.
         Several characters: Run._figure_look per figure."""
         from . import character as chars
@@ -3778,13 +3794,76 @@ class Run:
         wf = ProfileWorkflow("qwenedit", "edit", workflows_dir=self.d / "inputs" / "workflows")
         values, _ = chars.quality_values("quality", {}, chars.EDIT_SETTINGS)
         values.update(instruction=self.LOOK_INSTRUCTION.format(who=who, extra=self.m.get("look_extra") or "").replace("  ", " "),
-                      seed=int(self.m["seed"]))
+                      seed=int(self.m["seed"] if seed is None else seed))
         ref = self.d / rv if rv else Path((c.get("files") or {}).get(view) or c["files"]["front"])
         files = {wf.targets("image")[0]: frame, wf.targets("reference")[0]: ref}
-        self.event("look", image=name, view=view,
+        edit = None
+        if mask is not None and self.m.get("look_pin"):          # the room is pinned (look_pin.py): the frame at an
+            from . import look_pin                               # encoder-stable size, no centre crop, the figure's
+            prep = look_pin.prepare(frame, mask, self.work / "look_in", name)   # soft mask as a latent noise mask
+            files[wf.targets("image")[0]] = Path(prep["frame"])
+            files[("look_mask", "image")] = Path(prep["mask"])
+            edit = look_pin.graph_edit("look_mask")
+        self.event("look", image=name, view=view, pinned=edit is not None,
                    note="Qwen-Image-Edit puts the character into a Blender frame (a look image)")
         return self._comfy(step if name == "look" else step.setdefault("parts", {}).setdefault(name, {}), name, wf,
-                           values, files, {wf.output_node: out})
+                           values, files, {wf.output_node: out}, graph_edit=edit)
+
+    def _figure_mask(self, i: int) -> Path | None:
+        """The figure mask of shot frame `i` from the passes, or None (no mask pass: the plain look)."""
+        masks = passes.load(self.pass_dir).get("mask") or []
+        if i >= len(masks) or not Path(masks[i]).is_file():
+            return None
+        m = cv2.imread(str(masks[i]), cv2.IMREAD_UNCHANGED)
+        if m is None or (m[..., :3] if m.ndim == 3 else m).max() <= 127:   # no figure in the frame: nothing to pin
+            return None
+        return Path(masks[i])
+
+    def _offset_look(self, step: dict, name: str, out: Path) -> None:
+        """The kept pinned look moved a few pixels (look_pin.offset): a look that lines up with the layout pixel for
+        pixel made the video ~35% darker. The gate's tries (look_tryN.png) keep the unmoved picture."""
+        from . import look_pin
+        dx, dy = look_pin.offset(out)
+        step.setdefault("look_offsets", {})[name] = [dx, dy]
+        self.event("look_offset", image=name, dx=dx, dy=dy)
+        self.save()
+        return None
+
+    def _pinned_look(self, step: dict, name: str, frame: Path, mask: Path | None, view: str, out: Path) -> str | None:
+        """A look image with the room pinned and GATED (look_pin.check): when the look lost the background (a banner,
+        the hoop, a shift), it is made again with the next seed, at most look_pin.MAX_TRIES times; the best try is
+        kept. Old runs (no look_pin) and frames without a mask: one plain look, as before."""
+        if mask is None or not self.m.get("look_pin"):
+            return self._qwen_look(step, name, frame, view, out)
+        from . import look_pin
+        checks = step.setdefault("look_checks", {}).setdefault(name, [])
+        target = step if name == "look" else step.setdefault("parts", {}).setdefault(name, {})
+        while True:
+            seed = int(self.m["seed"]) + len(checks)
+            outcome = self._qwen_look(step, name, frame, view, out, mask=mask, seed=seed)
+            if outcome:
+                return outcome
+            try:
+                res = dict(look_pin.check(out, frame, mask), seed=seed)
+            except (ValueError, cv2.error, TypeError, AttributeError) as exc:   # not a readable picture: keep it, say so
+                self.event("look_check_skipped", image=name, reason=f"{type(exc).__name__}: {exc}"[:200])
+                return None
+            keep = out.with_name(f"{out.stem}_try{len(checks) + 1}{out.suffix}")
+            shutil.copyfile(out, keep)
+            res["file"] = keep.name
+            checks.append(res)
+            self.event("look_check", image=name, **{k: v for k, v in res.items() if k != "file"})
+            self.save()
+            if res["ok"]:
+                return self._offset_look(step, name, out)
+            if len(checks) >= look_pin.MAX_TRIES:                  # none passed: the best try (fewest lost tiles,
+                best = min(checks, key=lambda r: (r["lost_tiles"], -r["ssim"]))   # then the highest SSIM)
+                shutil.copyfile(out.with_name(best["file"]), out)
+                self.event("look_check_failed", image=name, kept=best["file"],
+                           note="no try kept the whole background; the best one is used")
+                return self._offset_look(step, name, out)
+            target.pop("job", None)                                # a new job for the next seed
+            out.unlink()
 
     SCENE_INSTRUCTION = ("Replace the plain grey background and the grey floor with this place: {scene}. The ground is "
                          "where the grey floor is, at the same height and angle, and the horizon stays where it is. "
@@ -3892,8 +3971,14 @@ class Run:
                     l0, w0 = video.background_lightness(rgb[0], masks[0])
                     lk, wk = video.background_lightness(rgb[at], masks[at])
                     ratio = lk / l0 if l0 > 1.0 and w0 == wk else 1.0
-                    sub["chain_light"] = video.match_lightness(chained, look, mask=masks[at], ref_mask=masks[0],
-                                                               ratio=ratio, tone=m.get("chain_light") == "tone")
+                    ref = look
+                    if m.get("chain_light_ref", "look") == "clip1":   # clip 1's own start, not the look (the
+                        #                                               video never reaches the look's lightness)
+                        ref = dst.parent / f"clip1_light_{k}.png"     # read again each time: a clip 1 retake
+                        video.frame_png(Path(parts["1"]["outputs"]["clip"]), ref, 0)
+                    sub["chain_light"] = dict(video.match_lightness(chained, ref, mask=masks[at], ref_mask=masks[0],
+                                                                    ratio=ratio, tone=m.get("chain_light") == "tone"),
+                                              ref=m.get("chain_light_ref", "look"))
             if float(m.get("chain_sharpen") or 0) > 0:
                 if m.get("chain_sharpen_mode") == "match":    # up to clip 1's own sharpness (about the smallest
                     #                                              amount that reaches it), not a fixed amount
@@ -4393,7 +4478,8 @@ class Run:
         return found or server.find_prompt(prefix)
 
     def _comfy(self, step: dict, name: str, wf: ProfileWorkflow, values: dict, files: dict,
-               outputs: dict[str, Path], extra_prefixes: dict[str, str] | None = None) -> str | None:
+               outputs: dict[str, Path], extra_prefixes: dict[str, str] | None = None,
+               graph_edit=None) -> str | None:
         """One ComfyUI job with recovery. Holds the GPU lock from the family check to the download."""
         from .backend import UnresolvedSubmission, is_key_reuse
         from . import comfy
@@ -4444,6 +4530,8 @@ class Run:
                 for key, suffix in (extra_prefixes or {}).items():
                     graph_values[key] = job["prefix"] + suffix
                 graph = wf.build(graph_values, files=files)
+                if graph_edit is not None:                        # a step's own change (look_pin: the pinned look)
+                    graph_edit(graph)
                 from .workflow import save_graph                  # the exact graph sent (the app's Workflows view)
                 save_graph(self.work / "graphs", name, graph, files=files,
                            meta={"run": self.id, "job": name, "profile": wf.profile, "variant": wf.variant,

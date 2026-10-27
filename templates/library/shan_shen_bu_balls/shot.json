@@ -271,17 +271,17 @@
   ],
   "file": "timeline.json"
  },
- "clip_context": "A wide shot, front-facing, the camera remains static. {character} faces the camera the whole time and dances the flash step: quick sideways slides with hard stops, small fast steps, knee lifts and foot flicks, loose arm swings.",
+ "clip_context": "A wide shot, front-facing, the camera remains static. Two framed banners hang on the back wall: the left banner reads \"Comfy\" and the right banner reads \"Open Source FTW\" in yellow letters, and small green signs above both doors read \"EXIT\". {character} faces the camera the whole time and dances the flash step: quick sideways slides with hard stops, small fast steps, knee lifts and foot flicks, loose arm swings.",
  "clip_texts": {
   "1": "{character} slides toward the right of the picture, stops hard, slides back toward the left, stops, slides right again, then flicks the left foot out to the side.",
   "2": "{character} kicks a second dodgeball away with the right foot, then claps both hands high above the head twice with bouncy steps in place.",
-  "3": "{character} raises both hands above the head once more, then strikes a playful ta-da pose: the right arm thrown up on the left side of the picture, the left hand on the hip, the head tilted. A dodgeball bounces once on the floor and lands in the raised right hand, which catches and holds it."
+  "3": "{character} raises both hands above the head once more, then strikes a playful ta-da pose: the right arm thrown up on the left side of the picture, the left hand on the hip, the head tilted. A dodgeball bounces once on the floor and rises into the raised right hand, which closes over the top of the ball from above and holds it hanging under the palm."
  },
  "check": {
   "errors": 0,
   "warnings": 2,
-  "at": 1792990591.3,
-  "sha": "edbe84d1525b6c6d957f5802f0fa00ffcc87ae07d491ad691aad1ca745aba5db",
-  "fp": "aba51d7b41f69f0a"
+  "at": 1793080294.3,
+  "sha": "1ce5872fc26e53ce338fec247d829496c96f20c2eb06c5d2e99b34f8b9946ff9",
+  "fp": "61ff9d55ba99b56e"
  }
 }

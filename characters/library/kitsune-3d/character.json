@@ -1,0 +1,86 @@
+{
+ "name": "kitsune-3d",
+ "created": 1792776507.7872674,
+ "source": "text",
+ "status": "ready",
+ "description": "a slim young human wanderer whose face is hidden behind a face-sized traditional white Japanese kitsune mask: smooth hard white porcelain-like surface with no fur, two tall pointed fox ears that are part of the mask with pink inside, narrow upward-curved eye slits shaped like closed smiling eyes outlined with red brush strokes, three small red flame-shaped marks in a fan on the forehead, a small black cat nose and a curved w-shaped cat mouth, with short whisker strokes. Shoulder-length straight purple-black hair frames it. Clothes: a short teal hooded cape (hood down) with a gold clasp, a cream sleeveless tunic with a brown belt and a leather shoulder strap, a long red scarf, brown fingerless gloves, dark grey trousers and brown wrapped boots.",
+ "style": "stylized cinematic 3D animation, animated-film look, soft stylized shapes and proportions, soft painted materials, detailed fabric materials, soft global illumination, evenly lit by soft neutral light from the front",
+ "files": {
+  "front": "./front.png",
+  "right": "./views/right.png",
+  "back": "./views/back.png",
+  "left": "./views/left.png",
+  "face": "./views/face.png",
+  "sheet": "./sheet.png"
+ },
+ "updated": "2026-10-26T23:36:53",
+ "front_prompt": "A full-body character design illustration of ONE original character: a slim young human wanderer whose face is hidden behind a face-sized traditional white Japanese kitsune mask: smooth hard white porcelain-like surface with no fur, two tall pointed fox ears that are part of the mask with pink inside, narrow upward-curved eye slits shaped like closed smiling eyes outlined with red brush strokes, three small red flame-shaped marks in a fan on the forehead, a small pink nose and a thin smiling mouth with short whisker strokes. A red cord ties the mask behind the head; shoulder-length straight purple-black hair frames it. Clothes: a short teal hooded cape (hood down) with a gold clasp, a cream sleeveless tunic with a brown belt and a leather shoulder strap, a long red scarf, brown fingerless gloves, dark grey trousers and brown wrapped boots. The character stands straight and faces the viewer in a neutral A-pose, arms about 35 degrees away from the body, open hands, legs slightly apart. The whole body is visible from head to feet with a margin, centered, on a plain flat black background. No text, no scenery, no floor shadow, no other characters. Style: cinematic fantasy anime cel-shaded illustration with hand-drawn linework, painted shading and stylized fantasy character design.",
+ "front_model": "Z-Image-Turbo",
+ "seed": 8,
+ "views_model": "Qwen-Image-Edit-2511 + Multiple-Angles LoRA",
+ "views_mode": null,
+ "views_seconds": null,
+ "provided": [],
+ "proxy": {
+  "head": {
+   "neck": [
+    0.4564,
+    0.0185,
+    0.0176
+   ],
+   "asset": {
+    "file": "./head_asset.blend"
+   }
+  },
+  "cape": {
+   "color": [
+    0.02,
+    0.2,
+    0.17
+   ],
+   "length": "knee"
+  }
+ },
+ "mannequin": {
+  "scale": 0.896,
+  "head": 1.3,
+  "legs": 0.7,
+  "arms": 0.85,
+  "neck": 0.35,
+  "torso": 0.8
+ },
+ "view_distance": "medium shot",
+ "reposed": {
+  "views": [
+   "front"
+  ],
+  "method": "anypose",
+  "body": {
+   "head": 1.55,
+   "legs": 0.7,
+   "arms": 0.85,
+   "neck": 0.35,
+   "torso": 0.8
+  }
+ },
+ "sheet_layout": "panels5",
+ "height": {
+  "m": 1.3014,
+  "ref_m": 1.8057,
+  "ratio": 0.7207,
+  "body": {
+   "scale": 0.896,
+   "head": 1.3,
+   "legs": 0.7,
+   "arms": 0.85,
+   "neck": 0.35,
+   "torso": 0.8
+  }
+ },
+ "display_name": "Kitsune 3D",
+ "sheet_scale": 0.7207,
+ "style_ref": "3d_animated",
+ "style_version": 2,
+ "skin_of": "kitsune",
+ "builtin_note": "Ships with cinestudio (characters/library/kitsune-3d): the 3d_animated skin of kitsune (skin_of kitsune); proxy kit = the v3 MODELLED head (head_asset.blend: a mask shell with ears, traced marks and cords on a separate head with hair clumps; .cinestudio/gauntlet/kit_kitsune3d) + the cape."
+}

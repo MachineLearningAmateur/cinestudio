@@ -1003,6 +1003,8 @@ def _parser() -> JsonArgumentParser:
     fk.add_argument("--look-chain", choices=("run", "prev", "anchor"), default=None)
     fk.add_argument("--chain-colour", choices=("off", "look", "match"), default=None)
     fk.add_argument("--chain-light", choices=("off", "look", "tone"), default=None)
+    fk.add_argument("--chain-light-ref", choices=("look", "clip1"), default=None,
+                    help="what chain_light holds each chained frame to: clip 1's first frame (new runs) or the look")
     fk.add_argument("--chain-sharpen-mode", choices=("fixed", "match"), default=None)
     fk.add_argument("--chain-sharpen-target", type=float, default=None)
     fk.add_argument("--adain", type=float, default=None)
@@ -1708,8 +1710,8 @@ def _dispatch(a) -> int:
         m = runner.fork_run(a.run_id, a.from_clip, a.note, video=a.video, style=a.style, describe_facing=a.describe_facing,
                             look_chain=a.look_chain, chain_colour=a.chain_colour, adain=a.adain, adain_ref=a.adain_ref,
                             keyframe=a.keyframe, relay_strength=a.relay_strength, clip_text=a.clip_text,
-                            chain_light=a.chain_light, chain_sharpen_mode=a.chain_sharpen_mode,
-                            chain_sharpen_target=a.chain_sharpen_target,
+                            chain_light=a.chain_light, chain_light_ref=a.chain_light_ref,
+                            chain_sharpen_mode=a.chain_sharpen_mode, chain_sharpen_target=a.chain_sharpen_target,
                             props=prop_args(a.prop, allow_empty=True) if a.prop else None,
                             prop_images=prop_image_args(a.prop_image, allow_empty=True) if a.prop_image else None,
                             clip_videos={k: t for k, t in a.clip_video} if a.clip_video else None)

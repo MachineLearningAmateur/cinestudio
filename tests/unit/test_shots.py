@@ -224,7 +224,7 @@ def test_the_built_in_dodgeball_template_has_a_text_per_clip(tmp_path, monkeypat
     assert "slides toward the right of the picture" in c1 and "left foot" in c1 and "catch" not in c1   # its own actions
     assert "flies" not in c1                                                    # no threat story for layout props
     assert "claps" in c2 and "dodge" not in c2.replace("dodgeball", "") and "catch" not in c2
-    assert "catches" in c3 and "kick" not in c3 and "slides" not in c3
+    assert "holds it" in c3 and "closes over" in c3 and "kick" not in c3 and "slides" not in c3   # the palm grip
     assert not any("faces the camera" in t for t in (c1, c2, c3))                 # the lasting state is the context
     with pytest.raises(shots.ShotError, match="built-in"):
         shots.clip_texts("shan_shen_bu_balls", {"1": "x"})

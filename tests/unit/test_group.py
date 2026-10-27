@@ -343,5 +343,5 @@ def test_runs_refuse_too_many_characters_and_video_templates(env):
 def test_crop_instructions_name_the_background_not_a_sky():
     """A crop of a gym wall came back with a blue sky when the instruction said "keep ... the sky" (trio_test)."""
     for text in (runner.Run.CROP_LOOK_INSTRUCTION, runner.Run.GROUP_LOOK_INSTRUCTION):
-        assert "sky" not in text and "as they are in image 1" in text
+        assert "sky" not in text and "as they are in Picture 1" in text
     assert "{place}" in runner.Run.GROUP_LOOK_INSTRUCTION

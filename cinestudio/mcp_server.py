@@ -1105,7 +1105,7 @@ def fork_run(run_id: str, from_clip: int, video: str | None = None, style: str |
              chain_light: str | None = None, chain_sharpen_mode: str | None = None,
              chain_sharpen_target: float | None = None, adain: float | None = None, adain_ref: str | None = None,
              keyframe: str | None = None, relay_strength: float | None = None, clip_text: str | None = None,
-             audio_relay: str | None = None, props: dict[str, str] | None = None,
+             audio_relay: str | None = None, chain_light_ref: str | None = None, props: dict[str, str] | None = None,
              prop_images: dict[str, str] | None = None, clip_videos: dict[str, str] | None = None,
              note: str | None = None) -> dict:
     """"Build on this video": a NEW run that keeps clips 1..from_clip-1 of a run and makes the rest again with the given
@@ -1115,12 +1115,12 @@ def fork_run(run_id: str, from_clip: int, video: str | None = None, style: str |
     fork's sheet is drawn again). Returns the new run id; poll run_status."""
     from . import cli
     _check_cli(("run", "fork"), look_chain=look_chain, chain_colour=chain_colour, chain_light=chain_light,
-               chain_sharpen_mode=chain_sharpen_mode, adain_ref=adain_ref, keyframe=keyframe, clip_text=clip_text)
+               chain_light_ref=chain_light_ref, chain_sharpen_mode=chain_sharpen_mode, adain_ref=adain_ref, keyframe=keyframe, clip_text=clip_text)
     _check_cli(("run", "new"), audio_relay=audio_relay)
     m = runner.fork_run(run_id, from_clip, note, video=video, style=style, describe_facing=describe_facing,
                         look_chain=look_chain, chain_colour=chain_colour, adain=adain, adain_ref=adain_ref,
                         keyframe=keyframe, relay_strength=relay_strength, clip_text=clip_text, chain_light=chain_light,
-                        chain_sharpen_mode=chain_sharpen_mode, chain_sharpen_target=chain_sharpen_target,
+                        chain_light_ref=chain_light_ref, chain_sharpen_mode=chain_sharpen_mode, chain_sharpen_target=chain_sharpen_target,
                         audio_relay=audio_relay, props=props, prop_images=prop_images, clip_videos=clip_videos)
     started = cli._start_detached(m["id"])                 # it also takes its place in the queue
     if not started.get("ok"):

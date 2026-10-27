@@ -1,5 +1,6 @@
-"""Shared test setup: tests never see the built-in templates and backgrounds of the repository (templates/library,
-backgrounds/library), unless a test points shots.BUILTIN or background.BUILTIN somewhere itself."""
+"""Shared test setup: tests never see the built-in templates, backgrounds and characters of the repository
+(templates/library, backgrounds/library, characters/library), unless a test points shots.BUILTIN, background.BUILTIN
+or character.BUILTIN somewhere itself."""
 import pytest
 
 
@@ -7,6 +8,12 @@ import pytest
 def _no_builtin_templates(tmp_path_factory, monkeypatch):
     from cinestudio import shots
     monkeypatch.setattr(shots, "BUILTIN", tmp_path_factory.mktemp("builtin_empty"))
+
+
+@pytest.fixture(autouse=True)
+def _no_builtin_characters(tmp_path_factory, monkeypatch):
+    from cinestudio import character
+    monkeypatch.setattr(character, "BUILTIN", tmp_path_factory.mktemp("builtin_char_empty"))
 
 
 @pytest.fixture(autouse=True)

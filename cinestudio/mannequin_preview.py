@@ -78,8 +78,22 @@ def _versions() -> str:
     return h.hexdigest()
 
 
+def _asset_sig(spec: dict) -> str:
+    """A kit with a modelled head (head.asset) changes when its .blend changes at the same path: the file's size and
+    time are part of the key (2026-10-27: a new kitsune head showed the old cached preview)."""
+    a = ((spec or {}).get("head") or {}).get("asset")
+    f = a.get("file") if isinstance(a, dict) else a
+    if not f:
+        return ""
+    try:
+        st = Path(f).stat()
+    except OSError:
+        return f"{f}|missing"
+    return f"{f}|{st.st_size}|{st.st_mtime_ns}"
+
+
 def key(body: dict, spec: dict) -> str:
-    return hashlib.sha256(f"{_canon(body)}|{_canon(spec)}|{_versions()}".encode()).hexdigest()[:24]
+    return hashlib.sha256(f"{_canon(body)}|{_canon(spec)}|{_asset_sig(spec)}|{_versions()}".encode()).hexdigest()[:24]
 
 
 def body_key(body: dict) -> str:

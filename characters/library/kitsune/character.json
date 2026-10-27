@@ -1,0 +1,99 @@
+{
+ "name": "kitsune",
+ "created": 1792776507.7872674,
+ "source": "text",
+ "status": "ready",
+ "description": "a slim young human wanderer whose face is hidden behind a face-sized traditional white Japanese kitsune mask: smooth hard white porcelain-like surface with no fur, two tall pointed fox ears that are part of the mask with pink inside, narrow upward-curved eye slits shaped like closed smiling eyes outlined with red brush strokes, three small red flame-shaped marks in a fan on the forehead, a small black cat nose and a curved w-shaped cat mouth, with short whisker strokes. Shoulder-length straight purple-black hair frames it. Clothes: a short teal hooded cape (hood down) with a gold clasp, a cream sleeveless tunic with a brown belt and a leather shoulder strap, a long red scarf, brown fingerless gloves, dark grey trousers and brown wrapped boots.",
+ "style": "cinematic fantasy anime cel-shaded illustration with hand-drawn linework, painted shading, vivid magical atmosphere, stylized fantasy character design",
+ "files": {
+  "front": "./front.png",
+  "face": "./views/face.png",
+  "right": "./views/right.png",
+  "back": "./views/back.png",
+  "left": "./views/left.png",
+  "sheet": "./sheet.png"
+ },
+ "updated": "2026-10-25T00:38:05",
+ "front_prompt": "A full-body character design illustration of ONE original character: a slim young human wanderer whose face is hidden behind a face-sized traditional white Japanese kitsune mask: smooth hard white porcelain-like surface with no fur, two tall pointed fox ears that are part of the mask with pink inside, narrow upward-curved eye slits shaped like closed smiling eyes outlined with red brush strokes, three small red flame-shaped marks in a fan on the forehead, a small pink nose and a thin smiling mouth with short whisker strokes. A red cord ties the mask behind the head; shoulder-length straight purple-black hair frames it. Clothes: a short teal hooded cape (hood down) with a gold clasp, a cream sleeveless tunic with a brown belt and a leather shoulder strap, a long red scarf, brown fingerless gloves, dark grey trousers and brown wrapped boots. The character stands straight and faces the viewer in a neutral A-pose, arms about 35 degrees away from the body, open hands, legs slightly apart. The whole body is visible from head to feet with a margin, centered, on a plain flat black background. No text, no scenery, no floor shadow, no other characters. Style: cinematic fantasy anime cel-shaded illustration with hand-drawn linework, painted shading and stylized fantasy character design.",
+ "front_model": "Z-Image-Turbo",
+ "seed": 8,
+ "views_model": "Qwen-Image-Edit-2511 + Multiple-Angles LoRA",
+ "views_mode": null,
+ "views_seconds": null,
+ "provided": [],
+ "proxy": {
+  "mask": {
+   "eyes": false,
+   "ears": true,
+   "ear_height": 0.6,
+   "ear_width": 0.36,
+   "shape": "round",
+   "marks": "kitsune",
+   "ear_inner": [
+    0.75,
+    0.25,
+    0.3
+   ]
+  },
+  "hair": {
+   "length": "medium",
+   "front": 0.95,
+   "locks": "shoulder",
+   "back": "shoulder",
+   "color": [
+    0.05,
+    0.02,
+    0.08
+   ]
+  },
+  "cape": {
+   "color": [
+    0.02,
+    0.2,
+    0.17
+   ],
+   "length": "knee"
+  }
+ },
+ "mannequin": {
+  "scale": 0.86,
+  "head": 1.55,
+  "legs": 0.7,
+  "arms": 0.85,
+  "neck": 0.35,
+  "torso": 0.8
+ },
+ "view_distance": "medium shot",
+ "reposed": {
+  "views": [
+   "front"
+  ],
+  "method": "anypose",
+  "body": {
+   "head": 1.55,
+   "legs": 0.7,
+   "arms": 0.85,
+   "neck": 0.35,
+   "torso": 0.8
+  }
+ },
+ "sheet_layout": "panels5",
+ "height": {
+  "m": 1.3019,
+  "ref_m": 1.8057,
+  "ratio": 0.721,
+  "body": {
+   "scale": 0.86,
+   "head": 1.55,
+   "legs": 0.7,
+   "arms": 0.85,
+   "neck": 0.35,
+   "torso": 0.8
+  }
+ },
+ "sheet_scale": 0.721,
+ "style_ref": "anime_cel",
+ "style_version": 1,
+ "display_name": "Kitsune",
+ "builtin_note": "Ships with cinestudio (characters/library/kitsune): an anime_cel fox-masked character, Z-Image front + Qwen-Image-Edit-2511 edits, AnyPose repose, views and sheet; chibi body; proxy kit = the ring-loft mask with kitsune marks, hair and cape. Its 3D skin: kitsune-3d."
+}

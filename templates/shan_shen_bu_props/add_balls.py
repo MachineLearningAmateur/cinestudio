@@ -36,6 +36,7 @@ import os
 import bmesh
 import bpy
 import numpy as np
+from mathutils import Quaternion
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gym_set  # noqa: E402
@@ -75,6 +76,33 @@ DODGE = [{"cross_after": 3.0, "aim_side": 0.11, "aim_up": 0.07, "angle_deg": -12
 #   speed (54-57 px/frame after, 62-73 before the bounce; the kicked balls fly at ~42, at most 101);
 # - time the catch to the hand's VISIBLE stop (its steps fall below 1 cm/frame, ~2 px), not to its exact settle (the
 #   ease-out creeps < 2 px/frame for 3 more frames: a ball that waits for it reads as a pause)
+# the GRIP of the catch (user, 2026-10-26: "why exactly is the ball ending up on top of the hand rather than under it
+# compared to our blender render"): the old end pose held the ball BESIDE an upright open hand (the fingers up, the palm
+# facing out; the ball 14 cm out and 6 cm below the wrist) and nothing held it, so LTX drew the common hold instead (the
+# palm up, the ball on top). Now the wrist bends toward the palm before the catch (the palm faces down, the fingers
+# point out), the ball comes up under the palm (catch_path: along the palm normal), and after the catch every finger and
+# the thumb curl around it until they touch it (TOUCH from the ball's surface).
+# The ball also moves FORWARD along the hand (toward the fingers) until it is arm_clear from the forearm and the upper
+# arm (user, 2026-10-26: "shouldnt the ball be further from the arm? right now it looks like it's not the palm actually
+# grabbing the ball"): under the palm block's centre, the 22 cm ball reached back under the wrist and touched the
+# forearm, so the wrist seemed to hold it.
+# Then PALMED, not held by the fingertips (user, 2026-10-26: "i feel like the ball should be palmed. not fingered"):
+# the hand opens and spreads before the catch (open_curl, spread), the ball comes up into the PALM's centre (it may
+# move forward only forward_max, to stay arm_clear from the forearm), and after the catch the spread fingers and the
+# thumb curl down over its sides until they touch it.
+# Then UNDER THE PALM ONLY (user, 2026-10-27: "the ball ... directly under the arm ... properly distance the ball from
+# contacting the arm and should strictly contact the palm only"): with wrist 60 deg + forward 4.5 cm the ball touched
+# the THUMB TIP (3 mm) and sat 1.5 cm from the forearm, so the video drew it against the forearm. Now choose_wrist
+# tries every wrist bend (wrist_degs) on the catch frame's geometry: the ball goes along the palm normal to `gap` from
+# the PALM BLOCK only (fingers and thumb are not the contact; they open away and curl after the catch), and the bend
+# kept is the one whose palm faces most downward with the ball >= arm_clear from the forearm and upper arm (3D) and
+# >= arm_clear_px from the arm's projection at preview, and >= body_clear from the rest of the body.
+GRIP = {"wrist_deg": 60.0, "wrist_degs": tuple(range(0, 95, 5)), "ease": 10, "curl_frames": 3, "touch": 0.004,
+        "arm_clear": 0.04, "arm_clear_px": 4.0, "forwards": tuple(i / 100 for i in range(0, 13)), "body_clear": 0.03, "open_curl": 0.0, "spread": 12.0,
+        "thumb_spread": 35.0, "thumb_open": -0.25}
+FAN = {"index": -1.0, "middle": 0.0, "ring": 1.0, "pinky": 2.0}   # blender_lib/mannequin.curl_fingers' fan
+JOINT_MAX = {1: 70.0, 2: 95.0, 3: 70.0}            # blender_lib/mannequin.curl_fingers: degrees per joint at curl 1
+FINGERS = ("thumb", "index", "middle", "ring", "pinky")
 CATCH = {"after_stop": 0, "stop_step": 0.01, "flight_frames": 5, "post_speed": 5.5, "dir": (0.95, -0.3),
          "restitution": 0.8, "keep": 0.9, "gap": 0.003}
 # the kicks: the ball comes from the side the foot flicks toward (more sideways than the flick: x 2.0, y 0.4), is on
@@ -348,6 +376,180 @@ def find_raised_hand(frames, bones, verts, parts):
             "steps_m_before_stop": step[max(0, j - 3):j + 3].round(4).tolist()}
 
 
+def _rot(axis, deg):
+    a = np.asarray(axis, float) / np.linalg.norm(axis)
+    t = math.radians(deg)
+    k = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
+    return np.eye(3) + math.sin(t) * k + (1 - math.cos(t)) * (k @ k)
+
+
+def palm_mask(parts, hand):
+    """the hand's palm surface: the palm block and the fingers' base segments (not the thumb)"""
+    side = hand[-2:]
+    return (parts == hand) | np.isin(parts, [f"{f}_01{side}" for f in FINGERS if f != "thumb"])
+
+
+def palm_ball(verts_f, parts, hand, n, y=None, forward=0.0):
+    """the ball's centre along the palm normal n from the palm block's centre (moved `forward` along the fingers'
+    direction y), `gap` from the palm surface only (palm_mask)"""
+    palm_m = palm_mask(parts, hand)
+    palm = verts_f[parts == hand].mean(axis=0) + (0.0 if y is None else y * forward)
+    lo, hi = 0.0, 0.6
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        g = float(np.linalg.norm(verts_f[palm_m] - (palm + n * mid), axis=1).min()) - R
+        lo, hi = (mid, hi) if g < CATCH["gap"] else (lo, mid)
+    return palm + n * hi
+
+
+def choose_wrist(h, frames, verts, parts, bones, cam):
+    """the wrist bend for the catch (see GRIP): every bend in wrist_degs is tried on the catch frame by turning the hand
+    and finger vertices about the hand bone's head and local X (what bend_wrist's local +X turn does)"""
+    hand, side = h["hand"], h["hand"][-2:]
+    fi = frames.index(h["stop"] + CATCH["after_stop"])
+    M = bones[hand + "_matrix"][fi]
+    head, ax = M[:3, 3], M[:3, 0]
+    moved = np.array([p == hand or (p.endswith(side) and p.split("_")[0] in FINGERS) for p in parts])
+    arm = np.isin(parts, ["forearm" + side, "upper_arm" + side])
+    rest = ~moved & ~arm
+    arm_px = np.array([cam.px(v)[0] for v in verts[fi][arm]])
+    tried = []
+    for deg in GRIP["wrist_degs"]:
+        Rm = _rot(ax, deg)
+        vf = verts[fi].copy()
+        vf[moved] = (vf[moved] - head) @ Rm.T + head
+        n = Rm @ M[:3, 2]
+        n /= np.linalg.norm(n)
+        y = Rm @ M[:3, 1]
+        y /= np.linalg.norm(y)
+        for fw in GRIP["forwards"]:                       # the least forward place that is clear of the arm
+            c = palm_ball(vf, parts, hand, n, y, fw)
+            arm_gap = float(np.linalg.norm(vf[arm] - c, axis=1).min()) - R
+            body_gap = float(np.linalg.norm(vf[rest] - c, axis=1).min()) - R
+            cp, rp, _ = cam.px(c)
+            px_gap = float(np.linalg.norm(arm_px - cp, axis=1).min()) - rp
+            ok = arm_gap >= GRIP["arm_clear"] and px_gap >= GRIP["arm_clear_px"] and body_gap >= GRIP["body_clear"]
+            if ok:
+                break
+        tried.append({"deg": deg, "forward": fw, "down": round(float(-n[2]), 3), "arm_gap_m": round(arm_gap, 3),
+                      "arm_gap_px": round(float(px_gap), 1), "body_gap_m": round(body_gap, 3), "ok": ok})
+    good = [t for t in tried if t["ok"]]
+    if not good:
+        raise SystemExit(f"add_balls: no wrist bend keeps the caught ball clear of the arm: {tried}")
+    # the palm as much downward as possible (the ball hangs under it), then the ball as near the palm's centre
+    best = max(good, key=lambda t: (round(t["down"], 2), -t["forward"], -t["deg"]))
+    return best["deg"], best["forward"], tried
+
+
+def bend_wrist(sc, rig, h, deg=None):
+    """Bend the raised hand toward its palm (a local +X turn moves the bone's Y toward its palm normal Z) by `deg`
+    (choose_wrist; default GRIP wrist_deg), eased in over GRIP ease frames up to the frame the hand stops, held to the
+    end. Every frame's own rotation is read first: keys written while reading would change the curve between the old
+    keys."""
+    deg = GRIP["wrist_deg"] if deg is None else deg
+    pb = rig.pose.bones[h["hand"]]
+    f0, f1 = h["stop"] - GRIP["ease"], h["stop"]
+    frames = list(range(f0, sc.frame_end + 1))
+    orig = []
+    for f in frames:
+        sc.frame_set(f)
+        orig.append(pb.rotation_quaternion.copy())
+    for f, q in zip(frames, orig):
+        t = min(1.0, max(0.0, (f - f0) / (f1 - f0)))
+        w = t * t * (3.0 - 2.0 * t)
+        pb.rotation_quaternion = q @ Quaternion((1.0, 0.0, 0.0), math.radians(deg * w))
+        pb.keyframe_insert("rotation_quaternion", frame=f)
+    sc.frame_set(sc.frame_end)
+    m = rig.matrix_world @ pb.matrix
+    return {"from": f0, "to": f1, "deg": deg, "palm_normal_end": [round(x, 3) for x in m.col[2][:3]],
+            "fingers_dir_end": [round(x, 3) for x in m.col[1][:3]]}
+
+
+def _set_curl(rig, side, finger, c, spread=0.0):
+    """mannequin.curl_fingers for one finger, with the palm grip's spread on the first joint (the thumb: away from the
+    index finger)"""
+    sgn = 1.0 if side == ".L" else -1.0
+    for i in (1, 2, 3):
+        q = Quaternion((1.0, 0.0, 0.0), math.radians(JOINT_MAX[i] * c * (0.6 if finger == "thumb" else 1.0)))
+        if i == 1 and spread:
+            fan = -GRIP["thumb_spread"] / GRIP["spread"] if finger == "thumb" else FAN[finger]   # thumb: thumb_spread deg
+            q = Quaternion((0.0, 0.0, 1.0), math.radians(spread * fan * sgn)) @ q
+        rig.pose.bones[f"{finger}_{i:02d}{side}"].rotation_quaternion = q
+
+
+def open_hand(sc, rig, h):
+    """Open and spread the raised hand over the same frames as the wrist bend (bend_wrist), held to the end: the palm
+    takes the ball, not the fingertips. Every frame's own finger rotations are read first (see bend_wrist)."""
+    side = h["hand"][-2:]
+    f0, f1 = h["stop"] - GRIP["ease"], h["stop"]
+    frames = list(range(f0, sc.frame_end + 1))
+    bones = [f"{f}_{i:02d}{side}" for f in FINGERS for i in (1, 2, 3)]
+    orig = []
+    for f in frames:
+        sc.frame_set(f)
+        orig.append({b: rig.pose.bones[b].rotation_quaternion.copy() for b in bones})
+    for f, qs in zip(frames, orig):
+        t = min(1.0, max(0.0, (f - f0) / (f1 - f0)))
+        w = t * t * (3.0 - 2.0 * t)
+        for fn in FINGERS:
+            _set_curl(rig, side, fn, GRIP["thumb_open"] if fn == "thumb" else GRIP["open_curl"], GRIP["spread"])
+            for i in (1, 2, 3):
+                b = rig.pose.bones[f"{fn}_{i:02d}{side}"]
+                b.rotation_quaternion = qs[b.name].slerp(b.rotation_quaternion, w)
+                b.keyframe_insert("rotation_quaternion", frame=f)
+
+
+def grip_fingers(sc, rig, coll, h, ball, catch):
+    """After the catch, curl every finger (and the thumb) of the raised hand around the ball: each one as far as it goes
+    before its mesh comes within GRIP touch of the ball's surface (the ball rides the hand bone, so the test at the
+    last frame holds for every frame after the catch), eased in over GRIP curl_frames and held to the end."""
+    side = h["hand"][-2:]
+    objs = {f: [o for o in bpy.data.collections[coll].all_objects if o.type == "MESH"
+                and (o.parent_bone or "").startswith(f + "_") and o.parent_bone.endswith(side)] for f in FINGERS}
+    end = sc.frame_end
+    sc.frame_set(catch)
+    start = {f: GRIP["thumb_open"] if f == "thumb" else GRIP["open_curl"] for f in FINGERS}   # open_hand
+    sc.frame_set(end)
+    c = np.array(ball.matrix_world.translation)
+
+    def clearance(f):
+        bpy.context.view_layer.update()
+        d = 9.0
+        for o in objs[f]:
+            mw = np.array(o.matrix_world)
+            co = np.array([tuple(v.co) for v in o.data.vertices])
+            w = co @ mw[:3, :3].T + mw[:3, 3]
+            d = min(d, float(np.linalg.norm(w - c, axis=1).min()) - R)
+        return d
+
+    target = {}
+    for f in FINGERS:
+        best = start[f]
+        for k in range(0, 41):
+            cv = start[f] + (1.0 - start[f]) * k / 40.0
+            _set_curl(rig, side, f, cv, GRIP["spread"])
+            if clearance(f) < GRIP["touch"]:
+                break
+            best = cv
+        target[f] = best
+    keys = list(range(catch, end + 1))
+    for fr in keys:
+        t = min(1.0, (fr - catch) / GRIP["curl_frames"])
+        w = t * t * (3.0 - 2.0 * t)
+        for f in FINGERS:
+            _set_curl(rig, side, f, start[f] + (target[f] - start[f]) * w, GRIP["spread"])
+            for i in (1, 2, 3):
+                rig.pose.bones[f"{f}_{i:02d}{side}"].keyframe_insert("rotation_quaternion", frame=fr)
+    worst = 9.0
+    for fr in keys:                                         # the check: no finger goes into the ball
+        sc.frame_set(fr)
+        c = np.array(ball.matrix_world.translation)
+        for f in FINGERS:
+            worst = min(worst, clearance(f))
+    return {"curl_from": {f: round(v, 3) for f, v in start.items()}, "curl_to": {f: round(v, 3) for f, v in target.items()},
+            "min_finger_gap_m": round(worst, 4)}
+
+
 def catch_path(h, frames, verts, parts, bones, cam):
     """the ball's centre at the catch: from the palm's centre along the palm's normal (the hand bone's +z: the side the
     fingers curl to; it faces down and out) to CATCH gap from the nearest body vertex. Real physics all the way: a fast
@@ -358,15 +560,14 @@ def catch_path(h, frames, verts, parts, bones, cam):
     hand = h["hand"]
     fc = h["stop"] + CATCH["after_stop"]
     fi = frames.index(fc)
-    palm = verts[fi][parts == hand].mean(axis=0)
-    n = bones[hand + "_matrix"][fi][:3, 2]                 # the palm's normal at the catch frame
+    n = bones[hand + "_matrix"][fi][:3, 2]                 # the palm's normal at the catch frame (the bent wrist)
     n = n / np.linalg.norm(n)
-    lo, hi = 0.0, 0.6
-    for _ in range(40):
-        mid = (lo + hi) / 2
-        g, _ = gap(verts, parts, fi, palm + n * mid)
-        lo, hi = (mid, hi) if g < CATCH["gap"] else (lo, mid)
-    c = palm + n * hi
+    y = bones[hand + "_matrix"][fi][:3, 1]                 # the fingers' direction
+    y = y / np.linalg.norm(y)
+    forward = h.get("forward", 0.0)
+    c = palm_ball(verts[fi], parts, hand, n, y, forward)   # against the palm surface only (choose_wrist)
+    arm = np.isin(parts, ["forearm" + hand[-2:], "upper_arm" + hand[-2:]])
+    arm_gap = float(np.linalg.norm(verts[fi][arm] - c, axis=1).min()) - R
     side = 1.0 if c[0] < 0 else -1.0                       # it travels toward the hand from the hand's outer side
     d = np.array([side * CATCH["dir"][0], CATCH["dir"][1]])
     d /= np.linalg.norm(d)
@@ -401,6 +602,7 @@ def catch_path(h, frames, verts, parts, bones, cam):
               "after_bounce": float(math.hypot(CATCH["post_speed"], vbz)),
               "at_catch": float(math.hypot(CATCH["post_speed"], vc)), "at_catch_up": float(vc)}
     return {"path": path, "throw": throw, "bounce": tb, "catch": fc, "centre": c, "palm_gap": palm_gap,
+            "forward": forward, "arm_gap": arm_gap,
             "palm_gap_part": part, "speeds": speeds, "bounce_at": b}
 
 
@@ -601,6 +803,11 @@ def main():
     cam = Camera(sc)
     dashes = find_dashes(frames, bones)
     kicks = find_kicks(frames, verts, parts, bones)
+    raised = find_raised_hand(frames, bones, verts, parts)
+    deg, fw, tried = choose_wrist(raised, frames, verts, parts, bones, cam)   # the bend that keeps the ball off the arm
+    wrist = dict(bend_wrist(sc, rig, raised, deg), forward=fw, tried=tried)           # the palm turns down over the ball
+    open_hand(sc, rig, raised)                             # and opens: the palm takes the ball
+    frames, verts, parts, bones = read_body(sc, rig, a.character)                # the body with the bent wrist
 
     global WALLS
     gym = [] if a.no_gym else gym_set.build(SET_BALL, R)
@@ -652,7 +859,7 @@ def main():
                   "foot_centre_to_centre_m": round(p["foot_centre_dist"], 3), "throw_frame": p["throw"],
                   "exit_frame": p["exit"], "v_in": p["v_in"].round(2).tolist(), "v_out": p["v_out"].round(2).tolist()})
         report["balls"].append(m)
-    hand = find_raised_hand(frames, bones, verts, parts)
+    hand = dict(find_raised_hand(frames, bones, verts, parts), forward=fw)
     p = catch_path(hand, frames, verts, parts, bones, cam)
     park = np.array([-(PARK + 30), PARK, -20.0])
     ob = make_ball("Ball_Catch", coll, mat, seam_mat)
@@ -665,6 +872,9 @@ def main():
               "catch_centre": p["centre"].round(3).tolist(), "bounce_at": p["bounce_at"].round(3).tolist(),
               "speeds_m_s": {k: round(v, 2) for k, v in p["speeds"].items()}, "throw_frame": p["throw"],
               **screen_check(keys, park, frames, verts, parts, cam, [p["catch"]])})
+    m["grip"] = grip_fingers(sc, rig, a.character, hand, ob, p["catch"])
+    m["grip"].update({"forward_m": round(p["forward"], 3), "arm_gap_m": round(p["arm_gap"], 3)})
+    m["wrist"] = wrist
     report["balls"].append(m)
     report["raised_hand"] = hand
 
@@ -702,7 +912,8 @@ def main():
     bad = [b["name"] for b in report["balls"] if b["name"].startswith("Ball_Dodge")
            and (b["min_gap_m"] <= 0.0 or b["min_gap_between_frames_m"] <= 0.0)]
     bad += [b["name"] for b in report["balls"] if b["name"] == "Ball_Catch"
-            and (not 0.0 <= b["palm_gap_m"] <= 0.006 or b["min_gap_before_contact_m"] < 0.0)]
+            and (not 0.0 <= b["palm_gap_m"] <= 0.006 or b["min_gap_before_contact_m"] < 0.0
+                 or b["grip"]["min_finger_gap_m"] < 0.0)]
     if closest[0] <= 0.0:
         bad.append(closest[2])
     if set_gap[0] < -0.005:                                # touching a wall in a bounce is fine; going in is not

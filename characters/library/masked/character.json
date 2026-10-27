@@ -1,0 +1,627 @@
+{
+ "name": "masked",
+ "created": "2026-10-22T05:38:20",
+ "source": "text",
+ "status": "ready",
+ "description": "a slim masked figure with a smooth white oval mask that covers the whole face, two black almond-shaped eye holes angled upward like snake eyes and no mouth opening; short dark plum-purple hair above and beside the mask. A fitted black long-sleeved bodysuit from the neck to the ankles. A short fitted plum-purple jacket, worn open, with a thin magenta trim along every edge, ending at the waist. Black gloves on both hands. White cloth bandages wrapped around BOTH forearms, left and right, from the wrist to just below the elbow, and around BOTH shins, left and right, from the ankle to the middle of the calf: four matching bandage wraps. Plain dark charcoal shoes.",
+ "style": "stylized 3D anime noir with soft painterly rendering, muted atmospheric environments, restrained violet and magenta accents, subtle material textures, mysterious surreal undertones; character proportions remain anime-inspired, with smooth facial surfaces and clean silhouettes",
+ "files": {
+  "front": "./front.png",
+  "sheet": "./sheet.png",
+  "face": "./views/face.png",
+  "right": "./views/right.png",
+  "back": "./views/back.png",
+  "left": "./views/left.png"
+ },
+ "updated": "2026-10-26T02:29:58",
+ "front_prompt": "A full-body character design illustration of ONE original character: a slim masked figure with a white oval mask with black almond eye holes angled like snake eyes and no mouth, short dark plum-purple hair, a fitted black long-sleeved bodysuit, a short fitted plum-purple jacket with a magenta trim that ends at the waist, black gloves, white bandages wrapped on the forearms and the shins, plain dark charcoal shoes; no cape, no poncho, no hood, no scarf, nothing loose or hanging; standing straight in a relaxed A-pose with the arms a little away from the body, exactly five clearly separated fingers on each hand The character stands straight and faces the viewer in a neutral A-pose, arms about 35 degrees away from the body, relaxed open hands with exactly five clearly separated fingers each, legs slightly apart. The whole body is visible from head to feet with a margin, centered, on a plain flat black background. No text, no scenery, no floor shadow, no other characters. Style: premium stylized cinematic 3D animation, polished animated-film quality, soft stylized proportions, detailed fabric materials, soft global illumination, evenly lit by soft neutral light from the front.",
+ "front_model": "Z-Image",
+ "seed": 8,
+ "view_distance": "medium shot",
+ "sheet_layout": "panels5",
+ "views_model": "Qwen-Image-Edit-2511 + Multiple-Angles LoRA",
+ "views_mode": null,
+ "views_seconds": null,
+ "provided": [],
+ "proxy": {
+  "mask": {
+   "color": [
+    0.55,
+    0.545,
+    0.54
+   ]
+  },
+  "hair": {
+   "color": [
+    0.0382,
+    0.0168,
+    0.0467
+   ]
+  },
+  "head": {
+   "neck": [
+    0.011,
+    0.0103,
+    0.0123
+   ],
+   "fit": {
+    "v": [
+     1.0762,
+     1.0211,
+     0.9659,
+     0.9108,
+     0.8556,
+     0.8005,
+     0.7453,
+     0.6902,
+     0.635,
+     0.5799,
+     0.5247,
+     0.4696,
+     0.4144,
+     0.3593,
+     0.3041,
+     0.249,
+     0.1939,
+     0.1387,
+     0.0836,
+     0.0284,
+     -0.0267,
+     -0.0819,
+     -0.137,
+     -0.1922,
+     -0.2473,
+     -0.3025,
+     -0.3576,
+     -0.4128,
+     -0.4679,
+     -0.5231,
+     -0.5782,
+     -0.6334,
+     -0.6885,
+     -0.7436,
+     -0.7988,
+     -0.8539,
+     -0.9091,
+     -0.9642,
+     -1.0194,
+     -1.0745,
+     -1.1297
+    ],
+    "a": [
+     0.1985,
+     0.2809,
+     0.3809,
+     0.4927,
+     0.5794,
+     0.6485,
+     0.7059,
+     0.753,
+     0.7941,
+     0.8324,
+     0.8647,
+     0.8912,
+     0.9118,
+     0.9279,
+     0.9412,
+     0.9529,
+     0.9647,
+     0.9735,
+     0.9764,
+     0.9735,
+     0.9676,
+     0.9573,
+     0.947,
+     0.9412,
+     0.9368,
+     0.9265,
+     0.9147,
+     0.8927,
+     0.8647,
+     0.8324,
+     0.8015,
+     0.7662,
+     0.7279,
+     0.6897,
+     0.6485,
+     0.5868,
+     0.5015,
+     0.4353,
+     0.3838,
+     0.3412,
+     0.3235
+    ],
+    "yf": [
+     -0.0962,
+     -0.2139,
+     -0.3503,
+     -0.5027,
+     -0.6016,
+     -0.6791,
+     -0.7433,
+     -0.7968,
+     -0.8396,
+     -0.877,
+     -0.9091,
+     -0.9385,
+     -0.9626,
+     -0.9839,
+     -1.0,
+     -1.0107,
+     -1.016,
+     -1.016,
+     -1.0107,
+     -1.0027,
+     -0.992,
+     -0.9786,
+     -0.9599,
+     -0.9385,
+     -0.9198,
+     -0.9064,
+     -0.8984,
+     -0.9037,
+     -0.9144,
+     -0.9225,
+     -0.9251,
+     -0.9225,
+     -0.9118,
+     -0.8984,
+     -0.885,
+     -0.8717,
+     -0.8583,
+     -0.8449,
+     -0.8316,
+     -0.8209,
+     -0.8128
+    ],
+    "yb": [
+     0.246,
+     0.3315,
+     0.4358,
+     0.5535,
+     0.6364,
+     0.7032,
+     0.762,
+     0.8075,
+     0.8476,
+     0.8797,
+     0.9091,
+     0.9358,
+     0.9599,
+     0.9786,
+     0.9947,
+     1.0054,
+     1.008,
+     1.008,
+     1.0054,
+     1.0027,
+     1.0,
+     1.0,
+     1.0,
+     1.0027,
+     0.9813,
+     0.9572,
+     0.9278,
+     0.8904,
+     0.8449,
+     0.8182,
+     0.7914,
+     0.7647,
+     0.7433,
+     0.7246,
+     0.6952,
+     0.6417,
+     0.5936,
+     0.5749,
+     0.5642,
+     0.5695,
+     0.6016
+    ],
+    "mask": {
+     "v0": 0.4479,
+     "v1": -1.1297,
+     "hw": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0735,
+      0.1412,
+      0.2221,
+      0.3059,
+      0.3926,
+      0.4456,
+      0.4941,
+      0.5177,
+      0.5206,
+      0.5441,
+      0.5588,
+      0.5632,
+      0.5779,
+      0.6015,
+      0.5897,
+      0.5765,
+      0.5618,
+      0.5485,
+      0.5368,
+      0.5235,
+      0.5073,
+      0.4853,
+      0.4515,
+      0.4088,
+      0.3573,
+      0.2971,
+      0.2235,
+      0.1618,
+      0.1103
+     ],
+     "back": [
+      -9.0,
+      -9.0,
+      -9.0,
+      -9.0,
+      -9.0,
+      -9.0,
+      -9.0,
+      -9.0,
+      -9.0,
+      -9.0,
+      -9.0,
+      -9.0,
+      -9.0,
+      -0.4947,
+      -0.5588,
+      -0.6123,
+      -0.5615,
+      -0.5054,
+      -0.4652,
+      -0.4331,
+      -0.4117,
+      -0.4064,
+      -0.4091,
+      -0.4144,
+      -0.4251,
+      -0.4091,
+      -0.393,
+      -0.3663,
+      -0.3315,
+      -0.2914,
+      -0.2781,
+      -0.2594,
+      -0.2567,
+      -0.2701,
+      -0.2995,
+      -0.3396,
+      -0.3957,
+      -0.4572,
+      -0.5187,
+      -0.5642,
+      -0.5989
+     ],
+     "left": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      -0.0544,
+      0.0,
+      0.0662,
+      0.1897,
+      0.3162,
+      0.3779,
+      0.4309,
+      0.4456,
+      0.4279,
+      0.4603,
+      0.4838,
+      0.4956,
+      0.5338,
+      0.5927,
+      0.5868,
+      0.5868,
+      0.578,
+      0.5662,
+      0.5603,
+      0.5515,
+      0.5309,
+      0.5103,
+      0.4809,
+      0.4397,
+      0.3897,
+      0.3309,
+      0.2574,
+      0.1956,
+      0.1427
+     ],
+     "right": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.2015,
+      0.2824,
+      0.3779,
+      0.4221,
+      0.4691,
+      0.5132,
+      0.5574,
+      0.5897,
+      0.6132,
+      0.6279,
+      0.6338,
+      0.6309,
+      0.6221,
+      0.6103,
+      0.5927,
+      0.5662,
+      0.5456,
+      0.5309,
+      0.5132,
+      0.4956,
+      0.4838,
+      0.4603,
+      0.422,
+      0.3779,
+      0.325,
+      0.2632,
+      0.1897,
+      0.128,
+      0.078
+     ]
+    },
+    "eye": [
+     [
+      0.5251,
+      -0.1278
+     ],
+     [
+      0.4992,
+      -0.1157
+     ],
+     [
+      0.4768,
+      -0.1097
+     ],
+     [
+      0.4557,
+      -0.1061
+     ],
+     [
+      0.4355,
+      -0.1041
+     ],
+     [
+      0.4161,
+      -0.1035
+     ],
+     [
+      0.3974,
+      -0.1041
+     ],
+     [
+      0.3794,
+      -0.1059
+     ],
+     [
+      0.3619,
+      -0.1086
+     ],
+     [
+      0.345,
+      -0.1124
+     ],
+     [
+      0.3286,
+      -0.1171
+     ],
+     [
+      0.3128,
+      -0.1228
+     ],
+     [
+      0.2975,
+      -0.1294
+     ],
+     [
+      0.2827,
+      -0.1369
+     ],
+     [
+      0.2684,
+      -0.1453
+     ],
+     [
+      0.2547,
+      -0.1547
+     ],
+     [
+      0.2415,
+      -0.165
+     ],
+     [
+      0.2289,
+      -0.1763
+     ],
+     [
+      0.2168,
+      -0.1887
+     ],
+     [
+      0.2054,
+      -0.2022
+     ],
+     [
+      0.1947,
+      -0.2169
+     ],
+     [
+      0.1848,
+      -0.233
+     ],
+     [
+      0.1758,
+      -0.2507
+     ],
+     [
+      0.1681,
+      -0.2708
+     ],
+     [
+      0.1639,
+      -0.2969
+     ],
+     [
+      0.1898,
+      -0.309
+     ],
+     [
+      0.2122,
+      -0.315
+     ],
+     [
+      0.2333,
+      -0.3186
+     ],
+     [
+      0.2535,
+      -0.3206
+     ],
+     [
+      0.2729,
+      -0.3212
+     ],
+     [
+      0.2916,
+      -0.3206
+     ],
+     [
+      0.3096,
+      -0.3189
+     ],
+     [
+      0.3271,
+      -0.3161
+     ],
+     [
+      0.344,
+      -0.3123
+     ],
+     [
+      0.3604,
+      -0.3076
+     ],
+     [
+      0.3762,
+      -0.302
+     ],
+     [
+      0.3915,
+      -0.2954
+     ],
+     [
+      0.4063,
+      -0.2879
+     ],
+     [
+      0.4206,
+      -0.2794
+     ],
+     [
+      0.4343,
+      -0.2701
+     ],
+     [
+      0.4475,
+      -0.2597
+     ],
+     [
+      0.4601,
+      -0.2484
+     ],
+     [
+      0.4722,
+      -0.236
+     ],
+     [
+      0.4836,
+      -0.2226
+     ],
+     [
+      0.4943,
+      -0.2079
+     ],
+     [
+      0.5042,
+      -0.1918
+     ],
+     [
+      0.5132,
+      -0.174
+     ],
+     [
+      0.5209,
+      -0.154
+     ]
+    ],
+    "eye_axis": 0.0221,
+    "asymmetric": false,
+    "round_top": true,
+    "ridge": 0.12,
+    "shade": 0.83,
+    "shade_side": "left",
+    "proud": 0.15,
+    "eye_scale": 1.25,
+    "chin_drop": 0.12,
+    "hair_volume": 1.06,
+    "side_cover": 0.8,
+    "cover_full": 0.3,
+    "cover_end": 0.6,
+    "under": true,
+    "hair_end": 0.85
+   }
+  }
+ },
+ "reposed": {
+  "views": [
+   "front",
+   "right",
+   "back",
+   "left"
+  ],
+  "method": "anypose"
+ },
+ "mannequin": {},
+ "height": {
+  "ratio": 1.0,
+  "body": {}
+ },
+ "sheet_scale": 1.0,
+ "display_name": "Masked",
+ "style_ref": "anime_noir",
+ "style_version": 1,
+ "builtin_note": "Ships with cinestudio (characters/library/masked): Z-Image front + Qwen-Image-Edit-2511 views, repose and sheet; proxy kit = the fitted head (kit gauntlet 2026-10-26: H19, top side cover 0.8, black under-layer, hair ends at 85%)."
+}

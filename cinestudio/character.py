@@ -190,9 +190,11 @@ def item_lock(folder: Path, name: str, timeout: float = 0):
 
 
 def _locked(fn):
-    """Run a character function under its character's lock (the first argument is the name)."""
+    """Run a character function under its character's lock (the first argument is the name). Every locked function
+    CHANGES the character, so a built-in character (read-only) is refused here, before any file is written."""
     @functools.wraps(fn)
     def wrapper(name, *args, **kwargs):
+        refuse_builtin(name)
         with char_lock(name):
             return fn(name, *args, **kwargs)
     return wrapper
@@ -211,13 +213,45 @@ def library() -> Path:
     return home() / "characters"
 
 
+# BUILT-IN characters (2026-10-26, user: "let's move it in as a built in character ... ship it in with proxy kits
+# too"): characters/library/<id>/ in the repo, read-only like the built-in templates, backgrounds and styles. Their
+# character.json keeps paths RELATIVE to its folder (load() resolves them); a user character of the same ID wins.
+BUILTIN = Path(__file__).resolve().parent.parent / "characters" / "library"
+
+
+def is_builtin(name: str) -> bool:
+    """True when `name` is a built-in character that no user character of the same ID hides."""
+    if not isinstance(name, str) or not NAME_RE.match(name):
+        return False
+    return not (library() / name / "character.json").is_file() and (BUILTIN / name / "character.json").is_file()
+
+
+def refuse_builtin(name: str, what: str = "changed") -> None:
+    if is_builtin(name):
+        raise CharacterError(f"{name!r} is a built-in character (it ships with cinestudio: characters/library/{name}) "
+                             f"and cannot be {what}; make a skin of it or a new character")
+
+
 def char_dir(name: str, must_exist: bool = True) -> Path:
     if not NAME_RE.match(name or ""):
         raise CharacterError(f"bad character name {name!r}: use lowercase letters, digits, '-' or '_' (max 48)")
     d = library() / name
     if must_exist and not (d / "character.json").is_file():
+        if (BUILTIN / name / "character.json").is_file():
+            return BUILTIN / name
         raise CharacterError(f"no character {name!r} in {library()}")
     return d
+
+
+def _resolve_paths(v: Any, base: Path) -> Any:
+    """A built-in record's relative file paths -> absolute paths in its folder (dicts and lists, recursively)."""
+    if isinstance(v, dict):
+        return {k: _resolve_paths(x, base) for k, x in v.items()}
+    if isinstance(v, list):
+        return [_resolve_paths(x, base) for x in v]
+    if isinstance(v, str) and v.startswith("./"):
+        return str(base / v[2:])
+    return v
 
 
 def _write_json(path: Path, data: Any) -> None:
@@ -227,27 +261,36 @@ def _write_json(path: Path, data: Any) -> None:
 
 
 def load(name: str) -> dict:
-    return json.loads((char_dir(name) / "character.json").read_text(encoding="utf-8"))
+    d = char_dir(name)
+    c = json.loads((d / "character.json").read_text(encoding="utf-8"))
+    if d.parent.resolve() == BUILTIN.resolve():
+        c = _resolve_paths(c, d)
+        c["builtin"] = True
+    return c
 
 
 def save(c: dict) -> None:
+    if c.get("builtin") or is_builtin(c.get("name", "")):
+        raise CharacterError(f"{c.get('name')!r} is a built-in character (characters/library) and cannot be changed")
     c["updated"] = time.strftime("%Y-%m-%dT%H:%M:%S")
     _write_json(char_dir(c["name"], must_exist=False) / "character.json", c)
 
 
 def list_characters() -> list[dict]:
-    if not library().is_dir():
-        return []
+    dirs = sorted(library().iterdir()) if library().is_dir() else []
+    mine = {d.name for d in dirs if (d / "character.json").is_file()}
+    dirs += [d for d in (sorted(BUILTIN.iterdir()) if BUILTIN.is_dir() else []) if d.name not in mine]
     out = []
-    for d in sorted(library().iterdir()):
+    for d in dirs:
         try:
-            c = json.loads((d / "character.json").read_text(encoding="utf-8"))
+            c = load(d.name) if d.parent.resolve() == BUILTIN.resolve() else                 json.loads((d / "character.json").read_text(encoding="utf-8"))
             row = {k: c.get(k) for k in ("name", "status", "source", "description", "style", "updated", "style_ref",
                                          "style_version", "skin_of")}
             row["display_name"] = display_name(c)         # what the app shows; "name" stays the ID
             row["proxy"] = bool(c.get("proxy"))           # the New video form: style text and the proxy kit switch
             row["missing"] = video_missing(c)             # what a Blender run still needs (mannequin, proxy, sheet)
             row["mannequin"] = c.get("mannequin")
+            row["builtin"] = bool(c.get("builtin"))       # ships with cinestudio (read-only)
             f = c.get("files", {})
             cands = c.get("candidates") or [{}]
             row["thumb"] = f.get("front") or f.get("sheet") or cands[0].get("file")   # a picture for the library
@@ -274,7 +317,7 @@ def free_id(display: str, folder: Path, fallback: str = "character") -> str:
     """A free ID in a library folder: slugify(display), then -2, -3 ... when the ID is taken (characters, props)."""
     base = slugify(display, fallback)
     cand, n = base, 2
-    while (Path(folder) / cand).exists():
+    while (Path(folder) / cand).exists() or (Path(folder) == library() and (BUILTIN / cand).exists()):
         suffix = f"-{n}"
         cand, n = base[:48 - len(suffix)] + suffix, n + 1
     return cand
@@ -1081,7 +1124,7 @@ VIDEO_STEPS = {"sheet": "finish its views and sheet (character finish NAME)",
                             "or --default)"}
 
 
-PROXY_PARTS = ("mask", "hair", "suit", "shoes", "bands", "jacket", "cape")     # bpy_jobs/proxy_kit.py
+PROXY_PARTS = ("mask", "hair", "suit", "shoes", "bands", "jacket", "cape", "head")     # bpy_jobs/proxy_kit.py
 
 
 def check_body(body: dict | None) -> dict:
@@ -1215,6 +1258,56 @@ def _choice(where: str, v, allowed) -> None:
         raise CharacterError(f"proxy {where}: {v!r} (use {', '.join(map(str, allowed))})")
 
 
+def _validate_head_fit(fit) -> None:
+    """head.fit = a head FITTED to the character's views (proxy_kit.fitted_head): levels v (top to bottom) with the
+    outline a / yf / yb, the mask region {v0, v1, hw, back} and the eye outline [[u, v], ...], in head units."""
+    if not isinstance(fit, dict):
+        raise CharacterError("proxy head.fit: an object (from the head fit of the character's views)")
+    lv = fit.get("v")
+    if not (isinstance(lv, list) and 4 <= len(lv) <= 400):
+        raise CharacterError("proxy head.fit.v: a list of 4..400 levels")
+    nums = lambda xs: all(isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)  # noqa: E731
+                          and abs(x) < 20 for x in xs)
+    if not nums(lv) or any(lv[i] <= lv[i + 1] for i in range(len(lv) - 1)):
+        raise CharacterError("proxy head.fit.v: numbers from the top down (decreasing)")
+    for k in ("a", "yf", "yb"):
+        if not (isinstance(fit.get(k), list) and len(fit[k]) == len(lv) and nums(fit[k])):
+            raise CharacterError(f"proxy head.fit.{k}: one number per level")
+    mk = fit.get("mask") or {}
+    for k in ("hw", "back", "left", "right"):
+        if k in mk and not (isinstance(mk[k], list) and len(mk[k]) == len(lv) and nums(mk[k])):
+            raise CharacterError(f"proxy head.fit.mask.{k}: one number per level")
+    if "eye_scale" in fit:
+        _num("head.fit.eye_scale", fit["eye_scale"], 0.5, 2.5)
+    if "ridge" in fit:
+        _num("head.fit.ridge", fit["ridge"], 0.0, 0.5)
+    if "eye_axis" in fit:
+        _num("head.fit.eye_axis", fit["eye_axis"], -1.0, 1.0)
+    if "shade" in fit:
+        _num("head.fit.shade", fit["shade"], 0.2, 1.0)
+    if "side_cover" in fit:
+        _num("head.fit.side_cover", fit["side_cover"], 0.0, 1.5)
+    if "under" in fit and not isinstance(fit["under"], bool):
+        raise CharacterError("proxy head.fit.under: true or false")
+    for k in ("cover_full", "cover_end", "hair_end"):
+        if k in fit:
+            _num("head.fit." + k, fit[k], 0.0, 1.0)
+    if "hair_volume" in fit:
+        _num("head.fit.hair_volume", fit["hair_volume"], 0.8, 1.5)
+    for k, hi in (("proud", 0.5), ("chin_drop", 0.8)):
+        if k in fit:
+            _num("head.fit." + k, fit[k], 0.0, hi)
+    if "shade_side" in fit and fit["shade_side"] not in ("left", "right"):
+        raise CharacterError("proxy head.fit.shade_side: left or right (the picture side of the darker half)")
+    if "round_top" in fit and not isinstance(fit["round_top"], bool):
+        raise CharacterError("proxy head.fit.round_top: true or false")
+    if "asymmetric" in fit and not isinstance(fit["asymmetric"], bool):
+        raise CharacterError("proxy head.fit.asymmetric: true or false")
+    eye = fit.get("eye") or []
+    if not (isinstance(eye, list) and len(eye) <= 200 and all(isinstance(p, list) and len(p) == 2 and nums(p) for p in eye)):
+        raise CharacterError("proxy head.fit.eye: a list of [u, v] points")
+
+
 def validate_proxy(spec) -> dict:
     """The proxy kit spec checked in full before it is saved (Codex review 2026-10-24: {"mask": true} counted as ready
     and failed later inside Blender): every part a dict of known types, numbers finite and in range, colours three
@@ -1222,7 +1315,7 @@ def validate_proxy(spec) -> dict:
     above a pointed mask's chin and below a cut top). -> spec."""
     if not isinstance(spec, dict) or set(spec) - set(PROXY_PARTS):
         raise CharacterError(f"the proxy spec is a JSON object with the parts {', '.join(PROXY_PARTS)}")
-    for part in ("mask", "hair", "suit", "shoes", "jacket", "cape"):
+    for part in ("mask", "hair", "suit", "shoes", "jacket", "cape", "head"):
         if part in spec and not isinstance(spec[part], dict):
             raise CharacterError(f"proxy {part}: an object is needed, for example {{}}")
     m = spec.get("mask")
@@ -1233,7 +1326,8 @@ def validate_proxy(spec) -> dict:
         if "shape" in m:
             _choice("mask.shape", m["shape"], ("round", "pointed"))
         for k, lo, hi in (("top", -1.0, 1.5), ("ear_height", 0.05, 3.0), ("ear_width", 0.05, 2.0),
-                          ("eye_size", 0.3, 3.0), ("shade", 0.0, 1.0)):
+                          ("eye_size", 0.3, 3.0), ("shade", 0.0, 1.0), ("width", 0.5, 1.6), ("length", 0.5, 1.6),
+                          ("depth", 0.5, 1.6), ("chin_back", 0.0, 0.8), ("eye_height", -0.5, 0.6)):
             if k in m and not (k == "shade" and isinstance(m[k], (list, tuple))):
                 _num("mask." + k, m[k], lo, hi)
         _colour("mask", m)
@@ -1268,6 +1362,30 @@ def validate_proxy(spec) -> dict:
                     raise CharacterError(f"proxy {w}: too low for a pointed mask (its chin narrows below z -0.45)")
                 if z_top is not None and z + reach > z_top - 0.02:
                     raise CharacterError(f"proxy {w}: above the mask's cut top (mask.top)")
+    hd = spec.get("head")
+    if hd is not None:                                    # the head shape + the neck colour (proxy_kit.py)
+        unknown = set(hd) - {"width", "depth", "length", "neck", "fit", "asset"}
+        if unknown:
+            raise CharacterError(f"proxy head: unknown keys {sorted(unknown)} (use width, depth, length, neck, fit, "
+                                 "asset)")
+        if "fit" in hd:
+            _validate_head_fit(hd["fit"])
+        if "asset" in hd:                                 # a modelled head (.blend in head units; proxy_kit.head_asset)
+            a = hd["asset"]
+            a = {"file": a} if isinstance(a, str) else a
+            if not (isinstance(a, dict) and isinstance(a.get("file"), str) and a["file"].lower().endswith(".blend")):
+                raise CharacterError("proxy head.asset: {\"file\": \"<path>.blend\"} (a head modelled in head units)")
+            if set(a) - {"file", "scale"}:
+                raise CharacterError("proxy head.asset: only the keys file and scale")
+            if not Path(a["file"]).is_file():
+                raise CharacterError(f"proxy head.asset: the file {a['file']!r} does not exist")
+            if "scale" in a:
+                _num("head.asset.scale", a["scale"], 0.5, 2.0)
+        for k in ("width", "depth", "length"):
+            if k in hd:
+                _num("head." + k, hd[k], 0.6, 1.4)
+        if "neck" in hd:
+            _colour("head", {"color": hd["neck"]})
     h = spec.get("hair")
     if h is not None:
         if "length" in h:
@@ -1277,6 +1395,8 @@ def validate_proxy(spec) -> dict:
                 _choice("hair." + k, h[k], ("chin", "shoulder", "chest"))
         if "front" in h:
             _num("hair.front", h["front"], -1.5, 1.5)
+        if "cover" in h and not isinstance(h["cover"], bool):
+            raise CharacterError("proxy hair.cover: true or false")
         _colour("hair", h)
         _colour("hair", h, "shade")
     for part in ("suit", "shoes"):
@@ -1633,3 +1753,18 @@ def move_paths(v: Any, old: Path, new: Path) -> Any:
     if isinstance(v, dict):
         return {k: move_paths(x, old, new) for k, x in v.items()}
     return v
+
+
+def _guard_builtin(fn):
+    """A change that is not locked (it takes the character's ID first) refuses a built-in character before it writes
+    any file (rescale_sheet draws the sheet before it saves)."""
+    @functools.wraps(fn)
+    def wrapper(name, *args, **kwargs):
+        refuse_builtin(name)
+        return fn(name, *args, **kwargs)
+    return wrapper
+
+
+for _fn in ("set_style", "link_skin", "unlink_skin", "set_display_name", "set_stand_in", "set_mannequin",
+            "rescale_sheet", "set_proxy"):
+    globals()[_fn] = _guard_builtin(globals()[_fn])

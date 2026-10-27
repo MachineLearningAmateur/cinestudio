@@ -1,6 +1,7 @@
 # cinestudio .gitignore: what must never reach a public repository.
 # Shipped on purpose (keep them tracked): templates/library/* (shot.blend, preview.mp4, shot.json, timeline.json),
-# backgrounds/library/* (plate.png, set.png, bg.json), styles/library/*, workflows/*, docs/*.
+# backgrounds/library/* (plate.png, set.png, bg.json), characters/library/* (character.json + its pictures),
+# styles/library/*, workflows/*, docs/*.
 
 # ---- private user data and local runtime state ------------------------------------------------------------------
 # characters, runs, uploads, backgrounds, songs, films, jobs, caches, gauntlet experiments, backups, tokens
@@ -84,3 +85,9 @@ Thumbs.db
 desktop.ini
 # Claude Code's local state (locks, local settings); AGENTS.md and CLAUDE.md ARE shipped
 .claude/
+
+# ---- our own research (user, 2026-10-26: "the research we do is for our own purpose") ---------------------------------
+# deep-research notes and reports, and the novelty check copied into docs/
+research_notes/
+reports/
+docs/novelty_research.md

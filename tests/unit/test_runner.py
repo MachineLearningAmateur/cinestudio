@@ -1766,3 +1766,10 @@ def test_the_apps_fork_forwards_the_clip_texts(env):
             runs_api._run_fork(rid, {"from_clip": 2, "video": "a gym", "clip_videos": bad})
     with pytest.raises(runner.RunError, match="kept by the fork"):
         runs_api._run_fork(rid, {"from_clip": 2, "video": "a gym", "clip_videos": {"1": "x"}})
+
+
+def test_new_runs_hold_the_chained_light_to_clip_1():
+    """2026-10-27: chain_light held each chained frame to the run's LOOK image, which the video never reaches (clip 1
+    came out ~8 L darker); every join was pushed up by the full clamp and the scene got brighter. New runs hold it to
+    clip 1's own first frame; old manifests (no key) keep the look."""
+    assert runner.DEFAULTS["chain_light_ref"] == "clip1"
