@@ -666,7 +666,11 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   local` (runner._grade_local, video.gain_map): a smooth PER-CHANNEL gain map (Gaussian sigma 16 px at 1536 wide,
   normalized convolution over the background of the shared frames, the character's area from the global ratio,
   limited 0.5..2.0) multiplies each later clip; result 24.3 / 15.2 / 9.0, the doors maroon again, no halos; 19 s for
-  two clips. A moving camera falls back to one gain (`match`). Joins are flow cross-faded.
+  two clips. The CHARACTER gets its own gain (user: "the character feels brighter at the beginning than at the
+  end"): the background map left it ~19% darker at the clip 2 join and ~8% at clip 3 (r20261027-030830-6152,
+  character L 18.4 -> 10.5); its mean colour inside the eroded mask in the shared frames gives a per-channel gain
+  (cumulative, 0.6..1.6) applied in each frame's own mask (dilated, feathered 6 px) -> 18.4 / 16.9 / 16.1 / 14.5, no
+  halo. A moving camera falls back to one gain (`match`). Joins are flow cross-faded.
 - **Test runs in PREVIEW** (stage 1 only, 768x448, ~half the time, below the 8 GB peak); render one chosen setting at
   final with the same seed for a demo. 1024x576 runs out of memory on 8 GB.
 - Write the costume's garment lengths into `--look-text` when the description and the sheet disagree (the look image

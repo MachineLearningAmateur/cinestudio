@@ -4369,23 +4369,38 @@ class Run:
         gdir.mkdir(parents=True, exist_ok=True)
         sample = set(range(2, ov - 1, 4))
         total = np.ones((h, w, 3), np.float32)
-        graded, rec = [clips[0]], [{"clip": 1, "map": None}]
+        fig_total = np.ones(3, np.float32)                 # the character's own gain (user, 2026-10-27: "the
+        graded, rec = [clips[0]], [{"clip": 1, "map": None}]   # character feels brighter at the beginning")
         for k in range(2, len(clips) + 1):
             s0 = video.clip_start(k, frames, ov)
             prev = [f for i, f in enumerate(video.read_rgb_frames(clips[k - 2], w, h)) if i - (frames - ov) in sample]
             this = [f for i, f in enumerate(video.read_rgb_frames(clips[k - 1], w, h)) if i in sample]
-            pairs = []
+            pairs, fa, fb = [], [], []
             for j, i in enumerate(sorted(sample)):
                 mk = masks[s0 + i] if s0 + i < len(masks) else None
                 bg, _ = video._region(mk, (h, w))
                 ref = np.clip(prev[j].astype(np.float32) * total, 0, 255).astype(np.uint8)
                 pairs.append((ref, this[j], bg))
+                if mk:                                     # inside the character (eroded): its mean colour
+                    import cv2
+                    m = cv2.imread(str(mk), cv2.IMREAD_GRAYSCALE)
+                    if m is not None:
+                        m = cv2.resize(m, (w, h), interpolation=cv2.INTER_NEAREST) > 127
+                        m = cv2.erode(m.astype(np.uint8), np.ones((9, 9), np.uint8)) > 0
+                        if m.sum() > 200:
+                            fa.append(prev[j][m].astype(np.float32).mean(axis=0) * fig_total)
+                            fb.append(this[j][m].astype(np.float32).mean(axis=0))
             total = (total * 0 + video.gain_map(pairs)).astype(np.float32)
+            if fa:
+                fig_total = np.clip(np.median(fa, axis=0) / np.maximum(np.median(fb, axis=0), 1.0), 0.6, 1.6).astype(np.float32)
             dst = gdir / f"clip_{k}.mp4"
-            video.apply_gain_map(clips[k - 1], dst, total, w, h, fps)
+            fig_masks = [masks[s0 + i] if s0 + i < len(masks) else None for i in range(frames)]
+            video.apply_gain_map(clips[k - 1], dst, total, w, h, fps, fig_masks=fig_masks,
+                                 fig_gain=fig_total if fa else None)
             graded.append(str(dst))
             rec.append({"clip": k, "map": {"min": round(float(total.min()), 3), "max": round(float(total.max()), 3),
-                                           "mean": round(float(total.mean()), 3)}})
+                                           "mean": round(float(total.mean()), 3)},
+                        "character_gain": [round(float(x), 3) for x in fig_total] if fa else None})
             np.save(gdir / f"map_{k}.npy", total)
         step["grade"] = rec
         step["grade_mode"] = "local"

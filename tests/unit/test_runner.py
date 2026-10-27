@@ -1413,6 +1413,9 @@ def test_the_full_model_check_names_the_download(env, tmp_path):
     from cinestudio import models
     mp = env["mp"]
     mp.setattr(models, "models_dir", lambda: tmp_path / "models")
+    real_bundle = models.bundle                          # small sizes: truncate() to the real 20 GB / 8 GB sizes
+    mp.setattr(models, "bundle", lambda tier: {k: dict(v, size=64) for k, v in real_bundle(tier).items()})
+    #                                                      filled the disk on NTFS (84 GB in three kept pytest runs)
     why = runner.full_model_missing("8gb")
     assert "ltx-2.5-22b-dev-transformer-comfy-int8-convrot" in why and "--tier 8gb --feature video" in why
     assert "--tier large" in runner.full_model_missing("large") and "bf16" in runner.full_model_missing("large")
@@ -1798,3 +1801,27 @@ def test_the_local_gain_map_undoes_a_regional_change():
     assert abs(float(m[45, 20].mean()) - 60 / 90) < 0.03
     assert abs(float(m[45, 140, 0]) - 60 / 80) < 0.03 and abs(float(m[45, 140, 1]) - 1.0) < 0.03
     assert 0.5 <= float(m.min()) and float(m.max()) <= 2.0
+
+
+def test_the_gain_map_writer_gives_the_character_its_own_gain(tmp_path):
+    """video.apply_gain_map with fig_masks + fig_gain: inside the frame's mask the character's gain, outside the map."""
+    import cv2
+    import numpy as np
+    from cinestudio import video
+    w, h = 64, 48
+    src = tmp_path / "src.mp4"
+    frames = tmp_path / "f"
+    frames.mkdir()
+    for i in range(3):
+        cv2.imwrite(str(frames / f"f_{i:04d}.png"), np.full((h, w, 3), 100, np.uint8))
+    video._run(["-framerate", "24", "-i", str(frames / "f_%04d.png"), "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                "-color_range", "tv", "-colorspace", "bt709", str(src)])
+    m = np.zeros((h, w), np.uint8)
+    m[10:38, 20:44] = 255
+    cv2.imwrite(str(tmp_path / "m.png"), m)
+    dst = tmp_path / "dst.mp4"
+    n = video.apply_gain_map(src, dst, np.ones((h, w, 3), np.float32), w, h, 24.0,
+                             fig_masks=[str(tmp_path / "m.png")] * 3, fig_gain=[1.5, 1.5, 1.5], feather=1.0)
+    assert n == 3
+    fr = next(video.read_rgb_frames(dst, w, h)).astype(float)
+    assert fr[24, 32].mean() > 135 and abs(fr[2, 2].mean() - 100) < 4

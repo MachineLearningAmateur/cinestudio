@@ -215,11 +215,14 @@ def read_rgb_frames(src: str | Path, width: int, height: int):
         p.wait()
 
 
-def apply_gain_map(src: str | Path, dst: str | Path, gmap, width: int, height: int, fps: float) -> int:
+def apply_gain_map(src: str | Path, dst: str | Path, gmap, width: int, height: int, fps: float,
+                   fig_masks: list | None = None, fig_gain=None, feather: float = 6.0) -> int:
     """A copy of a clip with every frame's RGB multiplied by the gain map `gmap` (H x W, or H x W x 3 per channel),
     written back as
     the clips are (yuv420p, BT.709, limited range, sRGB transfer; the audio copied): the LOCAL brightness grade of a
-    clip join (runner chain_grade "local"). -> frames written."""
+    clip join (runner chain_grade "local"). With `fig_masks` (one mask file per frame, or None) and `fig_gain` (3
+    channel gains), the CHARACTER inside each frame's mask (feathered) gets its own gain instead of the map (the
+    background map left a character 19% darker at a join unchanged). -> frames written."""
     import numpy as np
     flags = "accurate_rnd+full_chroma_int+bitexact"
     g = np.asarray(gmap, np.float32)
@@ -234,8 +237,18 @@ def apply_gain_map(src: str | Path, dst: str | Path, gmap, width: int, height: i
                             "-c:a", "copy", str(dst)], stdin=subprocess.PIPE)
     n = 0
     try:
+        import cv2
+        fg = None if fig_gain is None else np.asarray(fig_gain, np.float32).reshape(1, 1, 3)
         for fr in read_rgb_frames(src, width, height):
-            enc.stdin.write(np.clip(fr.astype(np.float32) * g + 0.5, 0, 255).astype(np.uint8).tobytes())
+            gg = g
+            mp = fig_masks[n] if fig_masks is not None and n < len(fig_masks) else None
+            if fg is not None and mp:
+                m = cv2.imread(str(mp), cv2.IMREAD_GRAYSCALE)
+                if m is not None:
+                    m = cv2.resize(m, (width, height), interpolation=cv2.INTER_LINEAR).astype(np.float32) / 255.0
+                    a = np.clip(cv2.GaussianBlur(cv2.dilate(m, np.ones((5, 5), np.uint8)), (0, 0), feather), 0, 1)[..., None]
+                    gg = g * (1 - a) + fg * a
+            enc.stdin.write(np.clip(fr.astype(np.float32) * gg + 0.5, 0, 255).astype(np.uint8).tobytes())
             n += 1
     finally:
         enc.stdin.close()
