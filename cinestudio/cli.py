@@ -1003,8 +1003,9 @@ def _parser() -> JsonArgumentParser:
     fk.add_argument("--look-chain", choices=("run", "prev", "anchor"), default=None)
     fk.add_argument("--chain-colour", choices=("off", "look", "match"), default=None)
     fk.add_argument("--chain-light", choices=("off", "look", "tone"), default=None)
-    fk.add_argument("--chain-grade", choices=("off", "match"), default=None,
-                    help="grade each clip after the first so its shared frames match the clip before (new runs: match)")
+    fk.add_argument("--chain-grade", choices=("off", "match", "local"), default=None,
+                    help="grade each clip after the first so its shared frames match the clip before: local = a smooth "
+                         "per-channel map (new runs), match = one gain")
     fk.add_argument("--chain-light-ref", choices=("look", "clip1"), default=None,
                     help="what chain_light holds each chained frame to: clip 1's first frame (new runs) or the look")
     fk.add_argument("--chain-sharpen-mode", choices=("fixed", "match"), default=None)

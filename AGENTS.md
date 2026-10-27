@@ -660,8 +660,13 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   Measured on a08c (mean grey clip 1/2/3): 27.5/27.9/29.3 -> 27.5/26.4/26.6; floor 25.4/26.9/28.9 -> 25.4/25.6/26.4.
   Pitfalls: grade in the clips' own YUV form (an RGB copy next to YUV clips read ~4% brighter in the stitch); match
   the plain MEANS (8-bit percentiles are too coarse; dark/light halves followed lamps and signs: a 0.83 gain; halves
-  split at the median are biased). Limit: one gain cannot undo a changed spread (the later clips have a lighter floor
-  and a darker wall: after the grade the wall reads ~10% darker by clip 3). Joins are flow cross-faded.
+  split at the median are biased). One gain cannot undo a REGIONAL change: LTX re-lights a still scene region by
+  region (a08c frame 30 -> 255, lightness: the upper wall 24.6 -> 13.0, a banner 13.8 -> 19.0, a door window 9.0 ->
+  12.6, the doors maroon -> brown; user: "the video still got brighter over time"). So the default is `chain_grade
+  local` (runner._grade_local, video.gain_map): a smooth PER-CHANNEL gain map (Gaussian sigma 16 px at 1536 wide,
+  normalized convolution over the background of the shared frames, the character's area from the global ratio,
+  limited 0.5..2.0) multiplies each later clip; result 24.3 / 15.2 / 9.0, the doors maroon again, no halos; 19 s for
+  two clips. A moving camera falls back to one gain (`match`). Joins are flow cross-faded.
 - **Test runs in PREVIEW** (stage 1 only, 768x448, ~half the time, below the 8 GB peak); render one chosen setting at
   final with the same seed for a demo. 1024x576 runs out of memory on 8 GB.
 - Write the costume's garment lengths into `--look-text` when the description and the sheet disagree (the look image

@@ -132,7 +132,8 @@ def frame_png(src: str | Path, dst: str | Path, index: int, width: int | None = 
 def background_levels(img_path: str | Path, mask_path=None) -> tuple[list, str | None]:
     """The dark and light levels of a frame's background (outside the character's grown mask, _region): the mean grey
     (0..255, the exact read: frame_png) of its darker half and of its lighter half (percentiles of 8-bit greys are
-    whole numbers: too coarse for steps of ~1 grey) and the plain mean. -> ([dark, light, mean], reason): reason
+    whole numbers: too coarse for steps of ~1 grey), the plain mean and the spread (standard deviation).
+    -> ([dark, light, mean, spread], reason): reason
     None = a real background,
     else the whole picture."""
     import cv2
@@ -144,7 +145,7 @@ def background_levels(img_path: str | Path, mask_path=None) -> tuple[list, str |
     x = im[bg].astype(float)
     m = float(np.median(x))
     lo, hi = x[x <= m], x[x > m]
-    return [float(lo.mean()), float(hi.mean() if hi.size else lo.mean()), float(x.mean())], why
+    return [float(lo.mean()), float(hi.mean() if hi.size else lo.mean()), float(x.mean()), float(x.std())], why
 
 
 def levels_yuv(src: str | Path, dst: str | Path, a: float, b: float) -> None:
@@ -166,6 +167,81 @@ def levels_yuv(src: str | Path, dst: str | Path, a: float, b: float) -> None:
         if tags.get(k) and tags[k] != "unknown":
             args += [flag, tags[k]]
     _run(args + [str(dst)])
+
+
+def gain_map(pairs: list, sigma: float = 16.0, lo: float = 0.5, hi: float = 2.0):
+    """The LOCAL colour ratio of two versions of the same frames, PER CHANNEL (a grey map left the doors brown where
+    the reference had them maroon): `pairs` = [(reference RGB, this RGB, background mask (True = background) or
+    None), ...]; per pair and channel a smooth ratio blur(ref * w) / blur(this * w) over the background (normalized
+    convolution), where little background is near (the character) the pair's global ratio of that channel; the
+    median of the pairs, limited to [lo, hi] (the upper wall needed ~1.9), smoothed once more.
+    -> H x W x 3 float32 (multiply `this` by it to match `ref`)."""
+    import cv2
+    import numpy as np
+    maps = []
+    for ref, this, bg in pairs:
+        w = np.ones(ref.shape[:2], np.float32) if bg is None else bg.astype(np.float32)
+        bw = cv2.GaussianBlur(w, (0, 0), sigma)
+        alpha = np.clip(bw / 0.3, 0.0, 1.0)
+        chans = []
+        for c in range(3):
+            a = ref[..., c].astype(np.float32)
+            b = this[..., c].astype(np.float32)
+            A = cv2.GaussianBlur(a * w, (0, 0), sigma) / np.maximum(bw, 1e-4)
+            B = cv2.GaussianBlur(b * w, (0, 0), sigma) / np.maximum(bw, 1e-4)
+            glob = float((a * w).sum() / max(1.0, (b * w).sum()))
+            chans.append(alpha * (A / np.maximum(B, 2.0)) + (1 - alpha) * glob)
+        maps.append(np.stack(chans, axis=-1))
+    m = np.clip(np.median(np.stack(maps), axis=0), lo, hi).astype(np.float32)
+    return cv2.GaussianBlur(m, (0, 0), sigma / 2)
+
+
+def read_rgb_frames(src: str | Path, width: int, height: int):
+    """Every frame of a video as an RGB uint8 array (the exact read of frame_png), one at a time."""
+    import numpy as np
+    flags = "accurate_rnd+full_chroma_int+bitexact"
+    p = subprocess.Popen([ffmpeg(), "-nostdin", "-loglevel", "error", "-i", str(src), "-vf",
+                          f"scale=flags={flags},format=rgb24", "-f", "rawvideo", "-"], stdout=subprocess.PIPE,
+                         stdin=subprocess.DEVNULL)
+    n = width * height * 3
+    try:
+        while True:
+            buf = p.stdout.read(n)
+            if len(buf) < n:
+                break
+            yield np.frombuffer(buf, np.uint8).reshape(height, width, 3)
+    finally:
+        p.stdout.close()
+        p.wait()
+
+
+def apply_gain_map(src: str | Path, dst: str | Path, gmap, width: int, height: int, fps: float) -> int:
+    """A copy of a clip with every frame's RGB multiplied by the gain map `gmap` (H x W, or H x W x 3 per channel),
+    written back as
+    the clips are (yuv420p, BT.709, limited range, sRGB transfer; the audio copied): the LOCAL brightness grade of a
+    clip join (runner chain_grade "local"). -> frames written."""
+    import numpy as np
+    flags = "accurate_rnd+full_chroma_int+bitexact"
+    g = np.asarray(gmap, np.float32)
+    if g.ndim == 2:
+        g = g[..., None]
+    enc = subprocess.Popen([ffmpeg(), "-nostdin", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
+                            "-s", f"{width}x{height}", "-r", str(fps), "-i", "-", "-i", str(src), "-map", "0:v:0",
+                            "-map", "1:a?", "-vf",
+                            f"scale=out_color_matrix=bt709:out_range=tv:flags={flags},format=yuv420p",
+                            "-c:v", "libx264", "-crf", "10", "-preset", "medium", "-threads", "4", "-color_range", "tv",
+                            "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "iec61966-2-1",
+                            "-c:a", "copy", str(dst)], stdin=subprocess.PIPE)
+    n = 0
+    try:
+        for fr in read_rgb_frames(src, width, height):
+            enc.stdin.write(np.clip(fr.astype(np.float32) * g + 0.5, 0, 255).astype(np.uint8).tobytes())
+            n += 1
+    finally:
+        enc.stdin.close()
+        if enc.wait() != 0:
+            raise RuntimeError(f"apply_gain_map: ffmpeg failed for {dst}")
+    return n
 
 
 def sharpness(img) -> float:

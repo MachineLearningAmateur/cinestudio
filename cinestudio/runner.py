@@ -164,9 +164,12 @@ DEFAULTS = {"quality": "preview", "seed": 333, "ingredients_strength": 1.0, "con
             #                             than its look, so the scene darkened at every join). DEFAULT since 2026-10-23
             #                             (user: "a must fix"): with the exact frame_png, drift clip 3 - clip 1 -0.28
             #                             (F1b) and -0.29 (P1) against -1.18 (run A) and -3.39 (anime); "off" = as made
-            "chain_grade": "match",     # the stitch: each clip after the first is graded (RGB x one gain) so that the
-            #                             background of its shared frames matches the clip before ("off" = as made;
-            #                             old manifests without the key). LTX makes every clip ~0.3-0.6 L lighter or
+            "chain_grade": "local",     # the stitch: each clip after the first is graded so that the background of
+            #                             its shared frames matches the clip before: "local" (DEFAULT) = a smooth
+            #                             per-channel gain MAP (LTX re-lights a still scene region by region: a08c's
+            #                             wall 24.6 -> 13.0 L, a banner 13.8 -> 19.0; with the map 24.3 and 15.2; a
+            #                             moving camera falls back to "match"), "match" = one gain, "off" = as made
+            #                             (old manifests without the key). LTX makes every clip ~0.3-0.6 L lighter or
             #                             darker than the still it is given (r20261027-005603-a08c: background L 10.53
             #                             -> 10.80 -> 11.40, each clip flat inside): the steps sit at the joins and the
             #                             input guards (chain_light) cannot remove them (user, 2026-10-27: "why does it
@@ -2556,7 +2559,7 @@ def fork_run(run_id: str, from_clip: int, note: str | None = None, **changes: An
         raise RunError(f"a fork can change only {list(FORK_FIELDS)}, not {sorted(unknown)}")
     for key, allowed in (("look_chain", LOOK_CHAINS), ("chain_colour", CHAIN_COLOURS), ("adain_ref", ("look", "clip1")),
                          ("keyframe", ("on", "off")), ("chain_light", ("off", "look", "tone")),
-                         ("chain_light_ref", ("look", "clip1")), ("chain_grade", ("off", "match")),
+                         ("chain_light_ref", ("look", "clip1")), ("chain_grade", ("off", "match", "local")),
                          ("chain_sharpen_mode", ("fixed", "match")), ("audio_relay", ("off", "carry"))):
         if key in changes and changes[key] not in allowed:
             raise RunError(f"{key.replace('_', ' ')} must be one of {list(allowed)}")
@@ -4342,6 +4345,53 @@ class Run:
                            "camera_azimuth_deg": fmt.get("camera_azimuth_deg")}
         return None
 
+    def _grade_local(self, clips: list, out: dict, step: dict) -> list:
+        """chain_grade "local" (user, 2026-10-27: "the video still got brighter over time"): LTX re-lights a still
+        scene region by region from clip to clip (a08c, lightness frame 30 -> 255: the upper wall 24.6 -> 13.0, a
+        banner 13.8 -> 19.0, a door window 9.0 -> 12.6), which one gain or a contrast match cannot undo. Clip k
+        (k >= 2) is multiplied by a smooth GAIN MAP (video.gain_map: the ratio of clip k-1 as graded to clip k over
+        the background of their shared frames); the maps add up from clip to clip. A moving camera falls back to
+        "match". Clip 1 is never changed; the originals stay, the graded copies go to work/graded/."""
+        bg_out = (self.st["steps"].get("background") or {}).get("outputs") or {}
+        if (bg_out.get("camera") or {}).get("moves"):
+            step["grade_mode"] = "match (the camera moves)"
+            return self._grade_clips(clips, out, step)
+        ov, frames, fps = int(out.get("overlap", 1)), int(out["frames"]), float(out["fps"])
+        w, h = int(out["width"]), int(out["height"])
+        if ov < 5:
+            step["grade"] = {"skipped": f"overlap {ov}: too few shared frames to measure"}
+            return clips
+        try:
+            masks = passes.load(self.pass_dir).get("mask") or []
+        except (OSError, ValueError, KeyError):
+            masks = []
+        gdir = self.work / "graded"
+        gdir.mkdir(parents=True, exist_ok=True)
+        sample = set(range(2, ov - 1, 4))
+        total = np.ones((h, w, 3), np.float32)
+        graded, rec = [clips[0]], [{"clip": 1, "map": None}]
+        for k in range(2, len(clips) + 1):
+            s0 = video.clip_start(k, frames, ov)
+            prev = [f for i, f in enumerate(video.read_rgb_frames(clips[k - 2], w, h)) if i - (frames - ov) in sample]
+            this = [f for i, f in enumerate(video.read_rgb_frames(clips[k - 1], w, h)) if i in sample]
+            pairs = []
+            for j, i in enumerate(sorted(sample)):
+                mk = masks[s0 + i] if s0 + i < len(masks) else None
+                bg, _ = video._region(mk, (h, w))
+                ref = np.clip(prev[j].astype(np.float32) * total, 0, 255).astype(np.uint8)
+                pairs.append((ref, this[j], bg))
+            total = (total * 0 + video.gain_map(pairs)).astype(np.float32)
+            dst = gdir / f"clip_{k}.mp4"
+            video.apply_gain_map(clips[k - 1], dst, total, w, h, fps)
+            graded.append(str(dst))
+            rec.append({"clip": k, "map": {"min": round(float(total.min()), 3), "max": round(float(total.max()), 3),
+                                           "mean": round(float(total.mean()), 3)}})
+            np.save(gdir / f"map_{k}.npy", total)
+        step["grade"] = rec
+        step["grade_mode"] = "local"
+        self.event("chain_grade", mode="local", maps=[r["map"] for r in rec])
+        return graded
+
     def _grade_clips(self, clips: list, out: dict, step: dict) -> list:
         """chain_grade "match": the luma of clip k (k >= 2) is multiplied by one gain so that the mean grey of the
         background (outside the character's grown mask) of its shared frames matches the same frames of clip k-1 as
@@ -4374,16 +4424,18 @@ class Run:
                 prev.append(lp)
                 this.append(lt)
                 why = why or w1 or w2
-            p_lo, p_hi, p_m = (float(np.median([x[j] for x in prev])) for j in (0, 1, 2))
-            t_lo, t_hi, t_m = (float(np.median([x[j] for x in this])) for j in (0, 1, 2))
+            p_lo, p_hi, p_m, p_s = (float(np.median([x[j] for x in prev])) for j in (0, 1, 2, 3))
+            t_lo, t_hi, t_m, t_s = (float(np.median([x[j] for x in this])) for j in (0, 1, 2, 3))
             pa, pb = maps[-1]                               # clip k-1 as graded
             g_lo, g_hi = pa * p_lo + pb, pa * p_hi + pb
-            # ONE gain from the means (a = mean ratio, b = 0): matching the dark and light halves separately
-            # (gain + offset) followed the lamps, signs and court lines that LTX draws differently in every clip
-            # (clip 3 got a = 0.83: its wall went 36 -> 29 grey)
-            a = float(min(1.15, max(0.85, (pa * p_m + pb) / max(1.0, t_m))))   # the plain means (the halves split at
-            #                                                  the median are of unequal size: their average is biased)
-            b = 0.0
+            # the MEAN and the SPREAD of the background matched: grey' = a * grey + b (user, 2026-10-27: "the video
+            # still got brighter over time": with one gain the mean held, but LTX raised the CONTRAST clip by clip:
+            # brighter door windows, banner letters, court lines and floor light pools on a darker wall). The plain
+            # mean and standard deviation (8-bit percentiles were too coarse; the halves split at the median were
+            # biased and followed the lamps)
+            g_m, g_s = pa * p_m + pb, pa * p_s
+            a = float(min(1.25, max(0.8, g_s / max(0.5, t_s))))
+            b = float(min(15.0, max(-15.0, g_m - a * t_m)))
             if abs(a - 1.0) < 0.003 and abs(b) < 0.3:
                 a, b = 1.0, 0.0
                 graded.append(clips[k - 1])
@@ -4392,8 +4444,8 @@ class Run:
                 video.levels_yuv(clips[k - 1], dst, a, b)
                 graded.append(str(dst))
             maps.append((a, b))
-            rec.append({"clip": k, "a": round(a, 4), "b": round(b, 2), "prev_mean": round(pa * p_m + pb, 2),
-                        "mean": round(t_m, 2), "prev_levels": [round(g_lo, 1), round(g_hi, 1)],
+            rec.append({"clip": k, "a": round(a, 4), "b": round(b, 2), "prev_mean": round(g_m, 2),
+                        "mean": round(t_m, 2), "prev_spread": round(g_s, 2), "spread": round(t_s, 2), "prev_levels": [round(g_lo, 1), round(g_hi, 1)],
                         "levels": [round(t_lo, 1), round(t_hi, 1)], "region": why or "background"})
         probe.unlink(missing_ok=True)
         step["grade"] = rec
@@ -4404,9 +4456,10 @@ class Run:
         out = self.st["steps"]["clip"]["outputs"]
         clips = out.get("clips") or [out["clip"]]
         tmp = self.d / "final.tmp.mp4"
-        if len(clips) > 1 and self.m.get("chain_grade", "off") == "match":
+        if len(clips) > 1 and self.m.get("chain_grade", "off") in ("match", "local"):
             try:
-                clips = self._grade_clips(clips, out, step)
+                clips = (self._grade_local(clips, out, step) if self.m.get("chain_grade") == "local"
+                         else self._grade_clips(clips, out, step))
             except Exception as exc:  # noqa: BLE001 - never fail a run over its grade: the clips as made
                 step["grade"] = {"skipped": f"the grade could not run: {exc}"[:300]}
                 self.event("chain_grade", skipped=step["grade"]["skipped"])

@@ -1778,5 +1778,23 @@ def test_new_runs_hold_the_chained_light_to_clip_1():
 def test_new_runs_grade_the_clip_joins():
     """2026-10-27: each LTX clip came out 0.3-0.6 L lighter than the still it was given (the steps sit at the joins);
     new runs grade every clip after the first to the clip before (chain_grade "match"); old manifests keep "off"."""
-    assert runner.DEFAULTS["chain_grade"] == "match"
+    assert runner.DEFAULTS["chain_grade"] == "local"
     assert "chain_grade" in runner.FORK_FIELDS
+
+
+def test_the_local_gain_map_undoes_a_regional_change():
+    """video.gain_map: a background region 1.5x brighter and a red cast elsewhere are found per channel, the
+    character (outside the background mask) takes the global ratio, and the map stays smooth and limited."""
+    import numpy as np
+    from cinestudio import video
+    ref = np.full((90, 160, 3), 60, np.uint8)
+    this = ref.copy()
+    this[:, :60] = 90                                    # the left part: 1.5x brighter in every channel
+    this[:, 100:, 0] = 80                                # the right part: a red cast
+    bg = np.ones((90, 160), bool)
+    bg[30:60, 70:90] = False                             # the character
+    m = video.gain_map([(ref, this, bg)], sigma=4)
+    assert m.shape == (90, 160, 3)
+    assert abs(float(m[45, 20].mean()) - 60 / 90) < 0.03
+    assert abs(float(m[45, 140, 0]) - 60 / 80) < 0.03 and abs(float(m[45, 140, 1]) - 1.0) < 0.03
+    assert 0.5 <= float(m.min()) and float(m.max()) <= 2.0
