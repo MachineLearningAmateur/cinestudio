@@ -4353,8 +4353,16 @@ class Run:
         the background of their shared frames); the maps add up from clip to clip. A moving camera falls back to
         "match". Clip 1 is never changed; the originals stay, the graded copies go to work/graded/."""
         bg_out = (self.st["steps"].get("background") or {}).get("outputs") or {}
-        if (bg_out.get("camera") or {}).get("moves"):
-            step["grade_mode"] = "match (the camera moves)"
+        cam = bg_out.get("camera") or {}
+        az = [a for a in (out.get("camera_azimuth_deg") or []) if a is not None]
+        if "moves" in cam:                                 # a backplate run records it
+            still = not cam["moves"]
+        elif az:                                           # else the camera's angle over the shot
+            still = max(az) - min(az) < 1.0
+        else:                                              # unknown (a panorama without angles, a video template):
+            still = False                                  # a map from the shared frames would not fit a moving view
+        if not still:
+            step["grade_mode"] = "match (the camera moves or is unknown)"
             return self._grade_clips(clips, out, step)
         ov, frames, fps = int(out.get("overlap", 1)), int(out["frames"]), float(out["fps"])
         w, h = int(out["width"]), int(out["height"])
