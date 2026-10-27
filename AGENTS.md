@@ -863,6 +863,10 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   stay listed and playable, and a start, retake or fork is refused (`runner.retired`).
 
 ### 7.5 The clip gauntlet (a long shot clip by clip until each clip passes)
+- **An AI agent makes every multi-clip run clip by clip (user, 2026-10-27: "clip by clip review is good when an ai
+  agent is involved"):** `--through-clip 1`, check, retake that clip until it passes, then the next. A later clip
+  continues from accepted ones, so a retake never breaks a join. Judge only frames inside the shot: the last clip is
+  cut at the shot's end (shan_shen_bu_balls: clip 3 frames 0-83 of 121).
 - In the app: New video > "Stop after each clip"; the run player's Clips section shows each clip's takes, "Make this
   clip again" (one change), "Measure" (the picture numbers), "Use this take" and "Make clip K+1" / "Make the rest";
   the run card's "Continue" restarts a paused or stopped run. The CLI and MCP do the same (below).
