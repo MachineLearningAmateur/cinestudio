@@ -97,8 +97,13 @@ DODGE = [{"cross_after": 3.0, "aim_side": 0.11, "aim_up": 0.07, "angle_deg": -12
 # the PALM BLOCK only (fingers and thumb are not the contact; they open away and curl after the catch), and the bend
 # kept is the one whose palm faces most downward with the ball >= arm_clear from the forearm and upper arm (3D) and
 # >= arm_clear_px from the arm's projection at preview, and >= body_clear from the rest of the body.
+# Then a MIDDLE grip (user, 2026-10-27: option 2): the ball at most 7 cm forward, >= 1.7 cm from the forearm (the old grip: 1.5) with the palm
+# facing down (min_down; at 2.5 cm only a 10 deg wrist was clear: the palm faced out), so the
+# fingers have room to curl down over it. The 11 cm / 4 cm grip put the ball under the straight fingers (they could
+# not curl: it touched the middle finger) and LTX dropped the ball in every take (r20261027-005603-a08c, 4 takes);
+# the old grip (fingers curled over it, r20261027-000933-c0ed) held it to the last frame.
 GRIP = {"wrist_deg": 60.0, "wrist_degs": tuple(range(0, 95, 5)), "ease": 10, "curl_frames": 3, "touch": 0.004,
-        "arm_clear": 0.04, "arm_clear_px": 4.0, "forwards": tuple(i / 100 for i in range(0, 13)), "body_clear": 0.03, "open_curl": 0.0, "spread": 12.0,
+        "arm_clear": 0.017, "arm_clear_px": 2.0, "min_down": 0.85, "forwards": tuple(i / 100 for i in range(0, 8)), "body_clear": 0.03, "open_curl": 0.0, "spread": 12.0,
         "thumb_spread": 35.0, "thumb_open": -0.25}
 FAN = {"index": -1.0, "middle": 0.0, "ring": 1.0, "pinky": 2.0}   # blender_lib/mannequin.curl_fingers' fan
 JOINT_MAX = {1: 70.0, 2: 95.0, 3: 70.0}            # blender_lib/mannequin.curl_fingers: degrees per joint at curl 1
@@ -433,7 +438,7 @@ def choose_wrist(h, frames, verts, parts, bones, cam):
                 break
         tried.append({"deg": deg, "forward": fw, "down": round(float(-n[2]), 3), "arm_gap_m": round(arm_gap, 3),
                       "arm_gap_px": round(float(px_gap), 1), "body_gap_m": round(body_gap, 3), "ok": ok})
-    good = [t for t in tried if t["ok"]]
+    good = [t for t in tried if t["ok"] and t["down"] >= GRIP.get("min_down", 0.0)]   # the palm faces down
     if not good:
         raise SystemExit(f"add_balls: no wrist bend keeps the caught ball clear of the arm: {tried}")
     # the palm as much downward as possible (the ball hangs under it), then the ball as near the palm's centre
