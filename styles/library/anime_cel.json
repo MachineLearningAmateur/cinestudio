@@ -1,10 +1,10 @@
 {
  "label": "Anime cel",
- "version": 1,
- "words": "cinematic fantasy anime cel-shaded illustration with hand-drawn linework, painted shading, vivid magical atmosphere, stylized fantasy character design",
- "light": "",
- "negative_image": "photo, photorealistic, 3D render, CGI, plastic, blurry",
+ "version": 2,
+ "words": "2D hand-drawn anime, digital cel animation frame, clean thin dark ink outlines, flat solid colour fills, one hard-edged shadow tone per colour, small sharp highlight shapes, painted 2D background art behind flat cel characters, crisp edges",
+ "light": "flat cel lighting from one clear direction, hard-edged shadow shapes, a thin bright rim light along the figure's edges, a soft glow only around lamps and lit signs",
+ "negative_image": "photo, photorealistic, 3D render, CGI, 3D animation, toon-shaded 3D model, video game screenshot, plastic, glossy specular highlights, subsurface skin, soft airbrushed gradients, smooth gradient shading, oil painting, watercolour bleed, rough pencil sketch, heavy film grain, depth of field, bokeh, lens flare, volumetric light rays, white outline around the figure, text, watermark",
  "lora": null,
  "reference": null,
- "_about": "The user's anime text (2026-10-23 A/B: it beat a 3D sentence on motion in one seed)."
+ "_about": "2D anime cel, curated from research (docs/anime_cel_style_research.md, 2026-10-27; user: \"update regular anime cel with the same set of prompt used in anime cel 2d\"). Version 1 was the user's fantasy anime text (\"cinematic\", \"painted shading\" invite gradients and a lit set). There is no LTX-2.5 2D LoRA: the pictures (skin, sheet, look image, backplate) carry the 2D look."
 }

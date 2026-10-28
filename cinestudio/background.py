@@ -204,7 +204,8 @@ def plate_prompt(scene: str, style: str, cam: dict) -> str:
 
 
 def camera_info(shot: str | Path) -> dict:
-    """The still camera of a .blend (bpy_jobs/plate_world.py --info); a moving camera is refused (use a panorama)."""
+    """The still camera of a .blend (bpy_jobs/plate_world.py --info). A PIVOT camera (one place, it only turns or
+    zooms) is described by its cover camera (`pivot`, `cover`); a camera that changes its place is refused."""
     import tempfile
 
     from . import blender
@@ -215,8 +216,9 @@ def camera_info(shot: str | Path) -> dict:
         info = Path(td) / "camera.json"
         blender.run_job("plate_world.py", shot, ["--info", str(info)], log=Path(td) / "plate_world.log")
         cam = json.loads(info.read_text(encoding="utf-8"))
-    if cam.get("moves"):
-        raise BackgroundError("a backplate needs a still camera: this shot's camera moves (use a 360 panorama)")
+    if cam.get("moves") and not cam.get("pivot"):
+        raise BackgroundError("a backplate needs a camera that stays in one place (it may turn and zoom): this shot's "
+                              "camera changes its place (use a 360 panorama)")
     return cam
 
 
@@ -347,9 +349,12 @@ SET_INSTRUCTION = (
     "place: {scene}. Every object in Picture 1 keeps exactly its place, size, shape and outline, and the camera, the "
     "floor, the walls and the horizon stay exactly where they are; only the materials, colours, textures and light "
     "change, so each clay shape becomes the real object it stands for. {style}. The place is empty: no people and no "
-    "characters. The image contains no recognizable text. Keep everything else exactly the same.")
+    "characters. Keep everything else exactly the same.")
 SET_NEGATIVE = ("people, person, character, figure, mannequin, crowd, moved objects, extra furniture, different layout, "
-                "different camera angle, text, watermark, logo, blurry, low quality")
+                "different camera angle, watermark, blurry, low quality")
+# no fixed text rule (2026-10-27, user: "the background creation prompt should be flexible ... as long as the look
+# matches the blender reference it's good and we can always direct what banners contain what text"): the scene words
+# decide the signs (quote their words)
 
 
 def _stable(ww: int, hh: int) -> bool:
@@ -471,7 +476,8 @@ def align_to_set(set_img, plate) -> tuple:
     return out, info
 
 
-def render_set(shot: str | Path, out: str | Path, width: int, height: int, frame: int | None = None) -> dict:
+def render_set(shot: str | Path, out: str | Path, width: int, height: int, frame: int | None = None,
+               cover: dict | None = None) -> dict:
     """The template's static set alone from its camera (bpy_jobs/render_set.py: mannequins, props and rigs hidden,
     Workbench, frame 1). Returns {"hidden", "kept"} (the object names)."""
     import tempfile
@@ -479,9 +485,15 @@ def render_set(shot: str | Path, out: str | Path, width: int, height: int, frame
     from . import blender
     with tempfile.TemporaryDirectory() as td:
         log = Path(td) / "render_set.log"
+        extra = []
+        if cover:                                             # a pivot camera: the set seen by its cover camera
+            cf = Path(td) / "cover.json"
+            cf.write_text(json.dumps(cover), encoding="utf-8")
+            extra = ["--cover", str(cf)]
         blender.run_job("render_set.py", shot, ["--out", str(out), "--width", str(int(width)),
                                                 "--height", str(int(height)),
-                                                *(["--frame", str(int(frame))] if frame is not None else [])], log=log)
+                                                *(["--frame", str(int(frame))] if frame is not None else []), *extra],
+                        log=log)
         line = next((ln for ln in log.read_text(encoding="utf-8", errors="replace").splitlines()
                      if ln.startswith("SET ")), None)
     if not Path(out).is_file():
@@ -490,7 +502,7 @@ def render_set(shot: str | Path, out: str | Path, width: int, height: int, frame
 
 
 def make_set_plate(scene: str, shot: str | Path, style: str = "", seed: int | None = None, name: str | None = None,
-                   on_event=None) -> dict:
+                   on_event=None, negative_extra: str = "") -> dict:
     """A backplate DRAWN OVER THE TEMPLATE'S OWN SET (2026-10-24, user: "we should be generating the backgrounds based
     off of the blender template ... right now it feels like we are praying that the background would fit"): Blender
     renders the set alone from the template's still camera; Qwen-Image-Edit redraws that render as the place in the
@@ -521,7 +533,7 @@ def make_set_plate(scene: str, shot: str | Path, style: str = "", seed: int | No
     tok = _secrets.token_hex(4)
     set_png, out = work / f"set_{tok}.png", work / f"setplate_{tok}.png"
     try:
-        info = render_set(shot, set_png, bw, bh, frame=cam.get("frame_start"))
+        info = render_set(shot, set_png, bw, bh, frame=cam.get("frame_start"), cover=cam.get("cover"))
         if (bw, bh) != (ew, eh):                               # pad to the stable size (the border repeated)
             pic = cv2.imread(str(set_png))
             pic = cv2.copyMakeBorder(pic, by, eh - bh - by, bx, ew - bw - bx, cv2.BORDER_REPLICATE)
@@ -533,7 +545,9 @@ def make_set_plate(scene: str, shot: str | Path, style: str = "", seed: int | No
                                                      "(background plate) gives the same result"})
         instruction = SET_INSTRUCTION.format(scene=scene.strip().rstrip("."),
                                              style=(style or "").strip().rstrip(".") or "The same rendering style")
-        values, _ = character.quality_values("quality", {"negative": SET_NEGATIVE}, character.EDIT_SETTINGS)
+        # the style's own excluded looks too (2026-10-27: a 2D style needs its 3D/photo negatives; cfg 3 applies them)
+        neg = ", ".join(x for x in (SET_NEGATIVE, (negative_extra or "").strip().rstrip(".")) if x)
+        values, _ = character.quality_values("quality", {"negative": neg}, character.EDIT_SETTINGS)
         values.update(instruction=instruction, seed=seed)
         wf = character.ProfileWorkflow("qwenedit", "edit")
         character.image_job("qwenedit", "edit", values, {wf.targets("image")[0]: set_png}, out, "bg_setplate",

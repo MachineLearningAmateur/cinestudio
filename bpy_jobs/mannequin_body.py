@@ -79,6 +79,8 @@ def apply(rig, body: dict, base_location=None) -> dict:
     if abs(legs - 1.0) > 1e-9 and dr["bone"] in rig.data.bones:   # the thigh's head height above the rig's floor (rest)
         drop = (1.0 - legs) * rig.data.bones[dr["bone"]].head_local.z * s
     loc = Vector(base_location) if base_location is not None else rig.location.copy()
-    rig.location = (loc.x, loc.y, loc.z - drop)
+    prev = float(rig.get("cs_body_drop", 0.0))                     # a body applied before (a template authored with
+    rig.location = (loc.x, loc.y, loc.z + prev - drop)            # the character's body): the drop is not doubled
+    rig["cs_body_drop"] = drop
     bpy.context.view_layer.update()
     return {"body": body, "drop": round(drop, 4)}

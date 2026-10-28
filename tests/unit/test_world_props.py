@@ -26,6 +26,7 @@ def load(script, objects, collections, monkeypatch):
     bpy.data = types.SimpleNamespace(objects=objects, collections=collections)
     mathutils = types.ModuleType("mathutils")
     mathutils.Vector = object
+    mathutils.Matrix = mathutils.Quaternion = object
     monkeypatch.setitem(sys.modules, "bpy", bpy)
     monkeypatch.setitem(sys.modules, "mathutils", mathutils)
     spec = importlib.util.spec_from_file_location(f"_test_{script}", BPY_JOBS / f"{script}.py")

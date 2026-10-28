@@ -22,6 +22,8 @@ def args():
     ap.add_argument("--width", type=int, required=True)
     ap.add_argument("--height", type=int, required=True)
     ap.add_argument("--frame", type=int, default=None, help="default: the scene's frame_start")
+    ap.add_argument("--cover", default=None, help="a pivot camera's cover pose (JSON file: plate_world.py --info "
+                                                   "'cover'): the set is rendered from it")
     return ap.parse_args(argv)
 
 
@@ -56,6 +58,16 @@ def main():
         elif not o.hide_render:
             kept.append(o.name)
     sc.frame_set(a.frame if a.frame is not None else sc.frame_start)
+    if a.cover:                                  # a pivot camera: render from its cover pose (the plate's projector)
+        from mathutils import Matrix, Quaternion, Vector
+        with open(a.cover, encoding="utf-8") as fh:
+            cv = json.load(fh)
+        cd = bpy.data.cameras.new("SetCover")
+        cd.lens, cd.sensor_width, cd.sensor_fit = cv["lens_mm"], cv["sensor_mm"], "HORIZONTAL"
+        ob = bpy.data.objects.new("SetCover", cd)
+        ob.matrix_world = Matrix.Translation(Vector(cv["location"])) @ Quaternion(cv["rotation_quat"]).to_matrix().to_4x4()
+        sc.collection.objects.link(ob)
+        sc.camera = ob
     try:
         sc.render.engine = "BLENDER_WORKBENCH"
     except TypeError:

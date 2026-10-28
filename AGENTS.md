@@ -418,6 +418,40 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
 - Use the target style's own words in the character's `style` field (an LTX LoRA cannot load into Qwen; its trigger
   word does nothing there). Do not invent design details in the instruction.
 - Compare every converted view with the original (marks, straps, colours, hands) and with the other views.
+- **Name every part's colour by its HEX CODE in Qwen prompts (user rule, 2026-10-27):** measure each part's colour on
+  the source picture (the front, or the original view) and write it as a hex code with a plain colour name, one part
+  per clause ("a short fitted violet #643095 jacket with a thin magenta #BA24A3 trim, dark violet #2E163D hair": the medians
+  measured on masked-anime_cel_2d's front).
+  Avoid colour words that lean to another hue: "plum-purple" pulled the redrawn hair and jacket toward red. Hex codes
+  steer the colour (Qwen-Image-Edit reads the prompt with Qwen2.5-VL); they do not make it exact, so MEASURE each
+  redraw against the front (per part: hue and brightness of its colour clusters) and correct a drift with a Qwen edit
+  at 2-4 seeds (user, 2026-10-27: "Stop doing paint jobs, why cant we let qwen handle it": no pixel painting or
+  recolouring in code as the final result; a code paint followed by a Qwen polish, a region edit at denoise ~0.5
+  that smooths the shade differences, is allowed: user, same day; code may measure, or mirror or copy a whole view).
+  Measured (masked-anime_cel_2d right view, before hex codes): the purples came out 9-11
+  hue units (0-180 scale) redder and the jacket 30% darker than the front (value 100 vs 146); the code match brought
+  them to 135/149 vs 136/150. A/B (left view, seed 303, the same reference; .cinestudio/gauntlet/hex_ab): without
+  / with hex codes vs the front: jacket hue +6.5 / +4.1, value -31.5 / -26.5; hair hue +10.4 / +10.9; trim hue +1.3 /
+  +4.1; the hex version's shoes came nearer the front's plum but its bandages turned beige. So hex codes are a small
+  help at best: keep them, and still measure each redraw (one seed only).
+- **Make a skin's views from its FRONT + the Blender MANNEQUIN's pose (user, 2026-10-27: "save this approach to use
+  front + mannequin pose to produce the other views"):** render the character's mannequin turnaround
+  (bpy_jobs/render_turnaround.py with its body: front, right, back, left on black), then one AnyPose job per view
+  (workflow qwenedit/anypose): Picture 1 = the skin's finished front aligned to that render (character.align_to; the
+  identity, style and colours), Picture 2 = the mannequin render at that angle (the pose and the angle). The text names
+  the angle ("a side view: the figure faces the LEFT of the picture ... the mask seen from the side as a narrow white
+  curve with one eye hole near its front edge"; the back: "the back of the head covered by the hair; no mask and no
+  face on the back of the head"), the design with hex colours, "flat 2D anime cel style" and "keep the plain black
+  background"; negatives: the style's 3D looks + white mannequin, mannequin joints, grey clay figure, stars, sparkles.
+  2-3 seeds per view, pick the best. Measured on masked-anime_cel_2d (.cinestudio/gauntlet/skin_candidates, script
+  tools/anypose_views.py; ~9 min per view on the 3070): all 6 side views were true profiles in the mannequin's pose with
+  the front's colours and a profile mask (picks: right s202, left s303). What it replaced: the skin step's
+  Multiple-Angles views drifted to a three-quarter turn; redrawing the 3D original views with the jacket crop drifted
+  9-11 hue units and kept a grey suit; with the 2D front as Picture 2 the colours matched but the mask came out as a
+  flat front-facing oval in most seeds; a back view at denoise 0.7 kept the 3D original's gradients. The back view
+  by AnyPose (seed 202): no mask or face on the back of the head (the old failure of 2026-10-22 did not come back
+  with the back text and the face/mask negatives), the hair down to a black collar, the front's colours. Not yet in
+  `character skin` (a manual script); check each view's facing side, the mask on a back view and small parts.
 
 ### 4.10 Props (objects for the template's Props layer; 2026-10-25, NOT yet tested in a GPU run)
 - **A prop** = one picture (the object alone on pure black, flatly lit, in the shot's style; optionally a side view) +
@@ -438,7 +472,7 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
 - **Use one in a video:** `run new ... --prop-ref "Ball_*=dodgeball"` (MCP `new_video_run(prop_refs=...)`; app: the
   object row's prop select in "Objects in this template"): the prop's front becomes the group's prop picture (the
   prop panel of the run's sheet, at most 2) and its words the group's words; `--prop` / `--prop-image` for the same
-  pattern win. Give the Blender prop the picture's main colour (the look image still shows the Blender colour).
+  pattern win. The Blender prop stays NEUTRAL (light grey: below).
 - First library prop: `dodgeball` (anime_noir; front = Qwen-Image seed 505, one thin magenta seam, closest to a real
   dodgeball and to the template's Blender balls; seeds 202/303/404 are its candidates).
 
@@ -456,6 +490,12 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   the camera (an early head turn made LTX turn the body early and step); the head follows the body; start an orbit at
   the front; keep the camera under ~0.6 deg/frame (or use more clips); end on a held stance (LTX carries fast steps on to
   the last frame otherwise).
+- **Camera moves, not cuts (user, 2026-10-27: "we cut only if it warrants a jump in scene"):** inside one place,
+  move the framing with a PIVOT camera (one place: turn and zoom, eased keys; section 6 keeps its backplate) and cut
+  only to a view the camera cannot reach (an insert of the far side of a held object). Example:
+  templates/rooftop_assignment/build.py (MAIN_KEYS: 35 mm wide -> 52 mm two-shot -> 72 mm push-in on one character ->
+  back out). Blender 5 keeps a camera object's keys and its data's keys (lens) in ONE layered action with two slots:
+  shift or edit each action once (shifting per owner moved the keys two or three times and froze the camera).
 - Built-in: `shan_shen_bu_balls` (the flash-step meme, the moves rebuilt in Blender from SAM 3D, 11.5 s / 3 clips, as a
   dodgeball gag: three balls pass the head at the flash steps, two kicked away, one caught in the quirky ta-da end pose;
   Props = 6 violet balls, Set = a grey gym with empty boards; its default background is the built-in backplate
@@ -527,8 +567,11 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
 - **Props in a template (2026-10-24; not A/B-tested yet):** Layout-To-Render keeps "the placement of objects from the
   layout" and LTX follows the OUTLINES in it (the bare mannequin's outline turned a poncho into a capelet), while text
   alone steers little. So a prop needs a Blender shape: the right silhouette and size (a photo = a thin flat card; a
-  blocky shape is fine if its outline reads), the right place (a held prop parented to the hand bone), its main colour
-  (a grey prop merges with the body), and a visible size on screen (at preview 768x448 and 4 m, 1 px is about 6 mm: a
+  blocky shape is fine if its outline reads), the right place (a held prop parented to the hand bone), a NEUTRAL colour
+  with clear value contrast (user, 2026-10-27: "for our blender we should keep the balls neutral color": the run's
+  prop words give the look, e.g. `--prop "Ball_*=..."`; shan_shen_bu_balls' balls are light grey 0.82 with a 0.55
+  seam against the 0.5 set; a violet layout ball stayed a violet blur although the words said watermelons,
+  r20261027-223625-ddf3), and a visible size on screen (at preview 768x448 and 4 m, 1 px is about 6 mm: a
   10 cm card is ~16 px; a 22 cm ball ~35 px). Detail that does not change the outline belongs in the reference images.
   Put props in a `Props` collection, never in `Mannequin` (the character mask and the proxy kit read that collection).
 - **A prop picture (2026-10-25; OFF by default after the A/B below):** `run new --prop-image "Ball_*=ball.png"` (at most 2; MCP
@@ -579,6 +622,25 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
       the set is rendered at background.edit_layout (an encoder-stable size, the frame's exact shape, other shapes
       padded) and sent without the crop node (fit 0.26 -> 0.52). Qwen can still draw the whole picture a few % smaller
       or shifted (v3: x0.96 and 44 px lower): background.align_to_set fits it back by ECC (fit 0.26 -> 0.46).
+    - **No fixed rules in the set-plate prompt beyond the geometry (2026-10-27, user: "the background creation
+      prompt should be flexible ... as long as the look matches the blender reference it's good and we can always
+      direct what banners contain what text"):** SET_INSTRUCTION keeps only the place-and-outline rule, the style
+      and "no people" (the run draws the characters); the scene words direct the rest. Signs: quote their words in
+      `--scene` (`the left banner reads "Comfy"`, `a small green sign above each door reads "EXIT"`) so the text
+      is drawn in the same render (the user prefers it to later edits: "more natural looking"); the old fixed "no
+      recognizable text" sentence gave blank banners and lamps for EXIT signs (gym_cel2d_s202). Quote the same
+      words in the run's video text (7.2).
+  - **A PIVOT camera keeps backplates (2026-10-27, user: "practicing moving and zooming the camera around, we cut only
+    if it warrants a jump in scene"):** a camera that stays in ONE place and only turns (pan, tilt, roll) and zooms
+    (no lens shift, no camera switch) sees the place exactly as one picture projected from that place. `plate_world.py
+    --info` reports `pivot` and a `cover` camera (the mean view direction and roll, wide enough for the corners of
+    every frame + 3%); its other fields then describe the cover, `render_set.py --cover` renders the set from it, and
+    `plate_world.py --plate` projects the picture from the cover camera (Object coordinates), not in screen space. A
+    saved pivot plate made at the same camera place (< 2 cm) is projected from ITS cover (`--cover`): one plate made
+    over a scene with every frame of several shots fits them all (the rooftop's shots A and C: AC_plate_source.blend =
+    the main camera over frames 1-336). A camera that changes its place is still refused (use a panorama); make a
+    push-in a ZOOM, not a dolly, to keep a backplate. The chain grade falls back to `match` (the view turns).
+    Not yet run through a video run (2026-10-27).
 - **Built-in backgrounds (2026-10-25):** `backgrounds/library/<name>/` (plate.png or pano.png, bg.json without personal
   paths, set.png for a plate drawn over a set) ship read-only like the built-in styles and templates; the user's
   library (<home>/backgrounds) comes first and a user background of the same name wins. Delete, style stamps and saves
@@ -596,7 +658,9 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   image) before LTX sees them; the LTX LoRA and the style text cannot repair a pasted-in look afterwards.
 - **Make every asset of a shot in the same style (user rule, 2026-10-24): background, characters and props.**
   - **Use the STYLE LIBRARY (2026-10-25):** `style list|show|new|edit|delete|set-default` (cinestudio/styles.py; MCP
-    `list_styles`, `set_character_style`; built-ins in styles/library: `3d_animated` (default), `anime_cel`; the user's
+    `list_styles`, `set_character_style`; built-ins in styles/library: `3d_animated` (default), `anime_cel` (since v2, 2026-10-27, the curated 2D
+    anime cel words, light and negatives of docs/anime_cel_style_research.md), `anime_noir` ("Anime noir 3D", the
+    style of the built-in Masked and of gym_noir_comfyui); the user's
     copies in <home>/styles win, e.g. 3d_animated + the 3dsrx LoRA at 0.4). Give assets a style by NAME, not by copied
     words: `character use-style NAME STYLE`, `background new|plate|from-set
     --style-preset STYLE`, `run new --style-preset STYLE` (words + the style's LoRA; without words or preset a run takes
@@ -615,8 +679,8 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   - Props: name each prop with the same concrete words everywhere (the background text, the video text, the look text):
     "plain red rubber dodgeballs". Show the same prop design in the background where it fits the place (a cart of the
     same red balls at the far wall of a dodgeball gym): it tells LTX what the props look like, in the same style.
-    Keep loose copies out of the play area (they look like the moving props). In the Blender layout give each prop its
-    main colour and a readable size (section 5 props).
+    Keep loose copies out of the play area (they look like the moving props). In the Blender layout keep each prop
+    neutral with value contrast and a readable size (section 5 props).
   - Light: the same light logic in the background text, the style words and the video text ("evenly lit by soft
     neutral light from the front" when the characters' style says so); a backlit place gave hazy silhouettes.
   - Check: compare the finished backplate with the character sheet side by side (palette, shading, line style) before

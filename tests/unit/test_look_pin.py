@@ -94,7 +94,7 @@ def test_the_run_moves_the_kept_look_and_records_it(tmp_path, monkeypatch):
         _pinned_look = runner.Run._pinned_look
         _offset_look = runner.Run._offset_look
 
-        def _qwen_look(self, step, name, frame_, view, out, mask=None, seed=None):
+        def _qwen_look(self, step, name, frame_, view, out, mask=None, seed=None, extra=""):
             cv2.imwrite(str(out), frame)                                # a look that kept the room
             return None
 

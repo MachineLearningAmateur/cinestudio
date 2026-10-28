@@ -44,8 +44,10 @@ import gym_set  # noqa: E402
 R = 0.11                       # ball radius (a 0.22 m dodgeball)
 G = 9.81
 RED = (0.80, 0.03, 0.03, 1.0)                  # (the first look; the props are violet now and the Set is grey)
-VIOLET = (0.22, 0.06, 0.30, 1.0)               # "anime noir" props (user): a muted deep violet ball
-MAGENTA = (0.70, 0.05, 0.40, 1.0)              # with a thin magenta seam ring
+VIOLET = (0.22, 0.06, 0.30, 1.0)               # (the anime noir look until 2026-10-27)
+MAGENTA = (0.70, 0.05, 0.40, 1.0)
+BALL = (0.82, 0.82, 0.82, 1.0)                 # NEUTRAL (user, 2026-10-27: "for our blender we should keep the balls
+SEAM = (0.55, 0.55, 0.55, 1.0)                 # neutral color"): the run's words give the look; light for contrast
 SET_BALL = (0.5, 0.5, 0.5, 1.0)                # the balls in the Set's cart: neutral grey like the whole Set
 PARK = 40.0                    # parked balls: 40 m to the side, 40 m back, 20 m under the floor
 SHARED = [(97, 121), (193, 217)]
@@ -829,8 +831,8 @@ def main():
     coll = bpy.data.collections.get("Props") or bpy.data.collections.new("Props")
     if coll.name not in sc.collection.children:
         sc.collection.children.link(coll)
-    mat = material("Dodgeball_Violet", VIOLET)
-    seam_mat = material("Dodgeball_Seam_Magenta", MAGENTA, rough=0.4)
+    mat = material("Ball_Neutral", BALL)
+    seam_mat = material("Ball_Seam_Neutral", SEAM, rough=0.4)
     report = {"dashes": dashes, "kicks": kicks, "balls": [], "radius": R, "params": {"dodge": DODGE, "kick": KICK, "catch": CATCH}}
 
     for i, d in enumerate(dashes, 1):

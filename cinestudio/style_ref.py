@@ -189,7 +189,10 @@ def job_values(st: dict, subject: str | None, seed: int, recipe: str, width: int
     from . import runner
     sig = runner.dev_sigmas(width, height, frames) if recipe == "full" else runner.DISTILLED_SIGMAS
     lora = st.get("lora") or {}
-    v = {"prompt": prompt_for(st, subject), "negative": NEGATIVE, "width": width, "height": height, "frames": frames,
+    # the style's own excluded looks too (2026-10-27: they never reached the job; only the full model applies a
+    # negative, the distilled one runs at CFG 1)
+    neg = ", ".join(x for x in (NEGATIVE, (st.get("negative_image") or "").strip().rstrip(".")) if x)
+    v = {"prompt": prompt_for(st, subject), "negative": neg, "width": width, "height": height, "frames": frames,
          "seed": int(seed), "sigmas": ", ".join(f"{x:.6g}" for x in sig)}
     if lora.get("name"):
         v |= {"style_lora": lora["name"], "style_lora_strength": float(lora.get("strength", 0.4))}

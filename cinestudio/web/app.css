@@ -1496,3 +1496,10 @@ summary.wf-gtitle { cursor: pointer; }
 .player .details .clipd pre .shared-part { color: var(--muted); margin-bottom: 6px; }
 .player .details .clipd pre .shared-part summary { cursor: pointer; font-style: italic; }
 .player .details .clipd pre .own-part { background: rgba(43,179,163,.16); color: var(--text); border-radius: 3px; padding: 0 2px; }
+
+/* the seed dice (core.js addSeedDice) */
+.seed-wrap { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.seed-wrap > input { flex: 1; min-width: 0; }
+.seed-dice { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+  padding: 0; border-radius: 6px; border: 1px solid var(--line); background: var(--panel2); color: var(--muted); cursor: pointer; }
+.seed-dice:hover { color: var(--text); border-color: var(--muted); }

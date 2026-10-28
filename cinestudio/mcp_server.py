@@ -931,7 +931,8 @@ def list_films() -> dict:
 
 # ---------------------------------------------------------------- videos
 # run new options that new_video_run takes in `advanced` (the CLI's names; the rest are its own parameters)
-ADVANCED_RUN_OPTIONS = ("look_extra", "relay", "relay_strength", "clip_text", "look_keyframes", "pose_strength",
+ADVANCED_RUN_OPTIONS = ("look_extra", "relay", "relay_strength", "clip_text", "look_keyframes", "prop_keyframes",
+                        "pose_strength",
                         "pose_body", "adain", "adain_ref", "chain_light", "chain_sharpen", "chain_sharpen_mode",
                         "chain_sharpen_target", "chain_colour", "look_chain", "clip_frames", "proxy", "negative",
                         "steps", "guidance", "profile", "character_collection", "rig", "character2_collection",

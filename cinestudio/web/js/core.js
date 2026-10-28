@@ -338,3 +338,49 @@ function drawPaging(p, total, shown, noun, bar, nav, grid) {
   if (rows) rows.addEventListener("change", () => go(() => { const first = p.offset(); p.rows = +rows.value; p.page = Math.floor(first / p.per()) + 1; }));
   return true;
 }
+
+
+// Seed boxes: a dice button next to every seed box, also those drawn later (user, 2026-10-27: "we need a randomizer
+// button for the seeds box"). A single seed gets a new random number; a "seeds" list (comma-separated) gets one more.
+// The retake form keeps its own "New seed" button.
+const DICE_ICON = `<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17"
+  rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8.3" cy="8.3" r="1.5" fill="currentColor"/>
+  <circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="15.7" cy="15.7" r="1.5" fill="currentColor"/></svg>`;
+function addSeedDice(root = document) {
+  $$('input[name="seed"], input[name="seeds"]', root).forEach((inp) => {
+    if (inp.dataset.dice || inp.closest(".retake-form")) return;
+    inp.dataset.dice = "1";
+    const wrap = document.createElement("span");
+    wrap.className = "seed-wrap";
+    inp.parentNode.insertBefore(wrap, inp);
+    wrap.appendChild(inp);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "seed-dice";
+    b.title = inp.name === "seeds" ? "Add a random seed" : "Random seed";
+    b.setAttribute("aria-label", b.title);
+    b.innerHTML = DICE_ICON;
+    b.addEventListener("click", (e) => {
+      e.preventDefault();
+      const r = Math.floor(Math.random() * 1e6);
+      if (inp.name === "seeds") {
+        const cur = inp.value.split(",").map((s) => s.trim()).filter(Boolean);
+        cur.push(String(r));
+        inp.value = cur.join(",");
+      } else {
+        inp.value = r;
+      }
+      inp.dispatchEvent(new Event("input", { bubbles: true }));
+      inp.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    wrap.appendChild(b);
+  });
+}
+function watchSeedBoxes() {
+  addSeedDice();
+  new MutationObserver((muts) => {
+    for (const m of muts) for (const n of m.addedNodes) if (n.nodeType === 1) addSeedDice(n);
+  }).observe(document.body, { childList: true, subtree: true });
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watchSeedBoxes);
+else watchSeedBoxes();

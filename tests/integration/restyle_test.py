@@ -6,7 +6,7 @@ images (frame 0 and the last frame of the still clip) have the requested size. W
 kept cannot be measured by a script: compare.png shows the original and both results for a person.
 
     python tests/integration/restyle_test.py --reference <sheet.png> --prompt-file <prompt.json> \
-        --style-lora Fantasy_Anime.safetensors --keep 0.5 --out <dir>
+        --style-lora 3dsrx_1250.safetensors --keep 0.5 --out <dir>
 """
 
 from __future__ import annotations

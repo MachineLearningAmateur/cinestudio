@@ -211,7 +211,7 @@ cinestudio files.
 |---|---|---|
 | diffusion_models/qwen_image_edit_2511_fp8mixed | 20.53 | replaced by int8 ConvRot today (same picture, 1.57x faster). Frozen into all 11 LTX-2.5 layout runs (see 2.5). |
 | loras/qwen-image-edit-2511-style-transfer-1_20 (dx8152) | 0.24 | tested today: it changed almost nothing (AGENTS 4.9). No reachable graph. Still in the setup list. |
-| loras/Fantasy_Anime | 0.35 | the user's LTX-2.3 style LoRA. Only the 47 old ltx23 runs used it. It made LTX-2.5 worse. User's file: user decides. |
+| loras/Fantasy_Anime | 0.35 | DELETED 2026-10-27 (user): the LTX-2.3 style LoRA of the old ltx23 runs; it made LTX-2.5 worse. |
 | checkpoints/sdpose_wholebody_fp16 + diffusion_models/rt_detr_v4-x-hgnet_fp16 | 1.92 + 0.12 | SDPose, the second pose detector of the bench (`pose_people.py --detector sdpose|fusion`; default dwpose). Not in the setup list. |
 
 **(d) Not referenced by cinestudio: 20.2 GB (probably the user's other ComfyUI work; dated before this project. Do not
@@ -312,7 +312,7 @@ or fork needs model files).
 | ComfyUI/models/sam2/sam2.1_hiera_tiny.safetensors (ComfyUI's own folder) | 0.16 GB | e | never used | as above |
 | ComfyUI-Shared/models/checkpoints/sdpose_wholebody_fp16.safetensors | 1.92 GB | c | SDPose bench only (default detector is DWPose) | `--detector sdpose|fusion` stops working |
 | ComfyUI-Shared/models/diffusion_models/rt_detr_v4-x-hgnet_fp16.safetensors | 0.12 GB | c | SDPose's person finder | as above |
-| ComfyUI-Shared/models/loras/Fantasy_Anime.safetensors | 0.35 GB | c | LTX-2.3 style LoRA; only old ltx23 runs (already not resumable) | the user's own file; low |
+| ComfyUI-Shared/models/loras/Fantasy_Anime.safetensors | 0.35 GB | c | DELETED 2026-10-27 (user) | - |
 | **Total (classes c + e)** | **25.3 GB** | | | |
 
 Not proposed (class d, 20.2 GB: acestep_v1.5_turbo, stable_audio_3_small_sfx, t5gemma_b_b_ul2, the three

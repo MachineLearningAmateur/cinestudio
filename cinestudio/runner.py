@@ -26,6 +26,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+import math
 import os
 import secrets
 import re
@@ -212,6 +213,11 @@ DEFAULTS = {"quality": "preview", "seed": 333, "ingredients_strength": 1.0, "con
             #                             (>= 30 deg from the camera there), made with the sheet view that matches the
             #                             body direction (the gauntlet's first pass, DL8: the costume holds through the
             #                             turn); "off" = the first look only
+            "prop_keyframes": "auto",   # layout + prop words (2026-10-27, user: "we really need to find a way to insert
+            #                             props into the scene without making them magically appear at the start"):
+            #                             per clip, the frame where a prop is largest (bpy_jobs/prop_track.py) redrawn
+            #                             with the character AND the prop (its words) as a keyframe look at that frame;
+            #                             old manifests (no key) read "off"
             "proxy": "auto",            # the character's proxy kit on the mannequin ("off" = the bare mannequin)
             "props": None,              # {prop pattern: words} over the template's prop words in the clip prompts
             #                             (2026-10-25, user: "map our own props to the object (for example the ball)");
@@ -1178,6 +1184,8 @@ def new_run(blend: str | Path | None, sheet: str | Path, character: str, video_t
         raise RunError("adain must be 0..1")
     if opts.get("look_keyframes") not in ("auto", "off"):
         raise RunError("look keyframes must be auto or off")
+    if opts.get("prop_keyframes") not in ("auto", "off"):
+        raise RunError("prop keyframes must be auto or off")
     rows = []
     for i, r in enumerate(rows_in):                     # every slot's collection and rig (slot 1 = the options')
         coll, rig = slot_names(i, opts["character_collection"], opts["rig"])
@@ -1196,6 +1204,7 @@ def new_run(blend: str | Path | None, sheet: str | Path, character: str, video_t
         if options.get("look_keyframes") == "auto":     # the sheet keyframes paste ONE character's panel into the mask
             raise RunError("keyframe looks work with one character: leave them off with several characters")  # box
         opts["look_keyframes"] = "off"                  # of every figure, and the Qwen keyframes know only character 1
+        opts["prop_keyframes"] = "off"
     if not template and blend is not None:              # a Blender shot: every library character brings its own
         from . import character as _chars              # mannequin body and proxy kit (user, 2026-10-24: "a character
         for nm in dict.fromkeys(r["name"] for r in rows):   # isnt ready to be used until a mannequin is set ... with
@@ -2056,6 +2065,42 @@ def sound_sentence(m: dict) -> str:
         return ""
     txt = SOUND_TEXT
     return " " + (txt if txt.endswith(".") else txt + ".")
+
+
+PROP_KEY_MIN_H = 0.06          # a prop keyframe needs a prop at least this part of the frame height (27 px at 448)
+PROP_KEY_GAP = 12               # ... and this many frames from the clip's other keyframes
+
+
+def pick_prop_frame(track: list, start: int, lo: int, hi: int, avoid=(), min_h: float = PROP_KEY_MIN_H,
+                    margin: float = 0.02) -> dict | None:
+    """The clip-local frame in lo..hi (shot frame start + local) where a prop is LARGEST while fully inside the picture
+    (`margin` from every edge) and in front of the camera, at least `min_h` of the frame height and PROP_KEY_GAP frames
+    from every frame in `avoid`; `track` = prop_track.py's frames (per shot frame: [{"name", "box", "front"}]).
+    -> {"local", "shot", "names", "boxes"} (every prop inside the picture at that frame), or None."""
+    best = None
+    for local in range(max(0, lo), hi + 1):
+        i = start + local
+        if i >= len(track):
+            break
+        if any(abs(local - a) < PROP_KEY_GAP for a in avoid):
+            continue
+        inside = [p for p in track[i] if p.get("front") and p["box"][0] >= margin and p["box"][1] >= margin
+                  and p["box"][2] <= 1 - margin and p["box"][3] <= 1 - margin]
+        if not inside:
+            continue
+        h = max(p["box"][3] - p["box"][1] for p in inside)
+        if h < min_h or (best is not None and h <= best[0]):
+            continue
+        best = (h, {"local": local, "shot": i, "names": [p["name"] for p in inside], "boxes": [p["box"] for p in inside],
+                    "height": round(h, 4)})
+    return best[1] if best else None
+
+
+def prop_words(m: dict) -> str:
+    """The props' words of a run (the template's layer words with the run's own over them), or ""."""
+    from . import shots
+    s = shots.props_sentence(shots.effective_layers(m.get("layers"), m.get("props")))
+    return s[len("In the scene: "):-1] if s else ""
 
 
 def props_sentence(m: dict) -> str:
@@ -3488,19 +3533,28 @@ class Run:
         if not info_f.is_file():
             blender.run_job("plate_world.py", shot, ["--info", str(info_f)], log=self.d / "logs" / "plate_world.log")
         cam = _read_json(info_f)
-        if cam.get("moves"):
-            raise RunError("a backplate needs a still camera: this shot's camera moves (use --background text, a 360 "
-                           "panorama)")
+        if cam.get("moves") and not cam.get("pivot"):
+            raise RunError("a backplate needs a camera that stays in one place (it may turn and zoom): this shot's "
+                           "camera changes its place (use --background text, a 360 panorama)")
         w, h = bgs.plate_size(cam)
         plate = self.work / "plate.png"
         own = sorted((self.d / "inputs").glob("plate.*"))
         lib = self.m.get("background_library")
+        cover_args = []
         if lib:                                           # a saved backplate: was it made for this camera?
             try:
                 made = bgs.load(lib).get("camera") or {}
             except bgs.BackgroundError:
                 made = {}
-            if made and abs(float(made.get("horizon_from_top", 0.5)) - float(cam.get("horizon_from_top", 0.5))) > 0.08:
+            mc = made.get("cover") or {}
+            if mc and len(cam.get("location") or []) == 3 and math.dist(mc.get("location") or (1e9, 0, 0),
+                                                                        cam["location"]) < 0.02:
+                # a pivot plate made at this camera's place (its cover may hold more frames, other shots of the
+                # same camera): projected from the cover camera it was made for
+                cf = self.work / "plate_cover.json"
+                cf.write_text(json.dumps(mc), encoding="utf-8")
+                cover_args = ["--cover", str(cf)]
+            elif made and abs(float(made.get("horizon_from_top", 0.5)) - float(cam.get("horizon_from_top", 0.5))) > 0.08:
                 self.event("warning", note=f"the backplate {lib} was made for another camera ({bgs.camera_summary(made)}; "
                            f"this shot: {bgs.camera_summary(cam)}): its horizon may not meet the floor")
         if not plate.is_file():
@@ -3528,7 +3582,7 @@ class Run:
         blend = self.work / "shot_plate.blend"
         self.event("blender", job="plate_world", note="Blender puts the backplate behind the shot")
         blender.run_job("plate_world.py", shot, ["--plate", str(plate), "--out", str(blend),
-                                                 "--character", self.character_collections()],
+                                                 "--character", self.character_collections(), *cover_args],
                         log=self.d / "logs" / "plate_world.log")
         step["outputs"] = {"plate": str(plate), "pano": str(plate), "blend": str(blend), "sha256": _sha256(plate),
                            "ground": tag, "camera": cam, "own_image": bool(own),
@@ -3643,7 +3697,72 @@ class Run:
                 if self._sheet_keyframe(rgb[last], passes.load(self.pass_dir)["mask"][last], "front", tout):
                     keys.append({"clip": k, "frame": tl, "file": str(tout), "view": "front", "head_deg": heads[last][0],
                              "source": "sheet", "held": held})
+        if not scene and self.m.get("prop_keyframes", "off") == "auto" and len(run_characters(self.m)) <= 1:
+            outcome = self._prop_keyframes(step, keys, rgb)
+            if outcome:
+                return outcome
         step["outputs"] = {"look": str(look), "made": True, "keyframes": keys}
+        return None
+
+    PROP_LOOK_TEXT = ("Also replace every plain grey ball in Picture 1 with {words}, each one at exactly the same place "
+                      "and size, with the same round outline.")
+
+    def _prop_track(self) -> list:
+        """bpy_jobs/prop_track.py on the run's shot (once; work/prop_track.json): per shot frame the props' boxes."""
+        out = self.work / "prop_track.json"
+        if not out.is_file():
+            self.event("blender", job="prop_track", note="Blender finds where each prop is on screen, frame by frame")
+            blender.run_job("prop_track.py", self.d / self.m["blend"]["file"], ["--out", str(out)],
+                            log=self.d / "logs" / "prop_track.log")
+        return _read_json(out).get("frames") or []
+
+    def _prop_keyframes(self, step: dict, keys: list, rgb: list) -> str | None:
+        """PROP keyframes (manifest prop_keyframes "auto"): per clip, the frame where a prop is largest and fully in the
+        picture (pick_prop_frame) is redrawn with the character AND the props (their words; the mask = the figure + the
+        props' ellipses), and LTX gets it at that frame: the prop is pictured where and when the layout has it, never
+        at the start. Nothing without prop words or props in view."""
+        words = prop_words(self.m)
+        if not words:
+            return None
+        track = self._prop_track()
+        fmt = self.st["steps"]["controls"]["outputs"]
+        n, ov, frames = fmt.get("clips", 1), int(fmt.get("overlap", 1)), fmt["frames"]
+        shot_len = min(len(rgb), len(track))
+        yaws = self._body_yaws()
+        masks = passes.load(self.pass_dir).get("mask") or []
+        for k in range(1, n + 1):
+            s0 = video.clip_start(k, frames, ov)
+            lo = 6 if k == 1 else ov + 2                        # not in the frames shared with the clip before ...
+            hi = frames - ov - 3 if k < n else min(frames - 8, shot_len - 1 - s0 - 6)   # ... or after
+            avoid = [kf["frame"] for kf in keys if kf["clip"] == k]
+            pick = pick_prop_frame(track, s0, lo, hi, avoid)
+            if pick is None or pick["shot"] >= len(rgb) or pick["shot"] >= len(masks):
+                continue
+            i = pick["shot"]
+            mask_png = self.work / "look_in" / f"prop_mask_k{k}.png"
+            mask_png.parent.mkdir(parents=True, exist_ok=True)
+            fig = cv2.imread(str(masks[i]), cv2.IMREAD_GRAYSCALE)
+            if fig is None:
+                continue
+            h, w = fig.shape[:2]
+            union = (fig > 127).astype(np.uint8) * 255
+            for x0, y0, x1, y1 in pick["boxes"]:                # each prop's ellipse, 20% larger than its box
+                cx, cy = (x0 + x1) / 2 * w, (y0 + y1) / 2 * h
+                ax, ay = (x1 - x0) / 2 * w * 1.2, (y1 - y0) / 2 * h * 1.2
+                cv2.ellipse(union, (int(cx), int(cy)), (max(2, int(ax)), max(2, int(ay))), 0, 0, 360, 255, -1)
+            cv2.imwrite(str(mask_png), union)
+            deg, side = (yaws[i] if yaws and i < len(yaws) and yaws[i] is not None else (0, "left"))
+            view = "front" if deg < 45 or deg > 135 else ("right" if side == "left" else "left")
+            out = self.work / f"look_p{k}.png"
+            if not out.is_file():
+                self.event("prop_keyframe", clip=k, frame=pick["local"], props=pick["names"], height=pick["height"])
+                outcome = self._pinned_look(step, f"look_p{k}", Path(rgb[i]), mask_png, view, out,
+                                            extra=self.PROP_LOOK_TEXT.format(words=words))
+                if outcome:
+                    return outcome
+            keys.append({"clip": k, "frame": pick["local"], "file": str(out), "view": view, "source": "prop",
+                         "props": pick["names"]})
+            self.save()
         return None
 
     def _head_yaws(self) -> list | None:
@@ -3782,7 +3901,7 @@ class Run:
                            values, files, {wf.output_node: out})
 
     def _qwen_look(self, step: dict, name: str, frame: Path, view: str, out: Path, mask: Path | None = None,
-                   seed: int | None = None) -> str | None:
+                   seed: int | None = None, extra: str = "") -> str | None:
         """One look image: Qwen-Image-Edit puts the character (its `view` from the library as image 2) into `frame`.
         Several characters: Run._figure_look per figure."""
         from . import character as chars
@@ -3803,7 +3922,8 @@ class Run:
         who = self.m.get("look_text") or desc
         wf = ProfileWorkflow("qwenedit", "edit", workflows_dir=self.d / "inputs" / "workflows")
         values, _ = chars.quality_values("quality", {}, chars.EDIT_SETTINGS)
-        values.update(instruction=self.LOOK_INSTRUCTION.format(who=who, extra=self.m.get("look_extra") or "").replace("  ", " "),
+        more = " ".join(x for x in (self.m.get("look_extra") or "", extra or "") if x)
+        values.update(instruction=self.LOOK_INSTRUCTION.format(who=who, extra=more).replace("  ", " "),
                       seed=int(self.m["seed"] if seed is None else seed))
         ref = self.d / rv if rv else Path((c.get("files") or {}).get(view) or c["files"]["front"])
         files = {wf.targets("image")[0]: frame, wf.targets("reference")[0]: ref}
@@ -3839,18 +3959,19 @@ class Run:
         self.save()
         return None
 
-    def _pinned_look(self, step: dict, name: str, frame: Path, mask: Path | None, view: str, out: Path) -> str | None:
+    def _pinned_look(self, step: dict, name: str, frame: Path, mask: Path | None, view: str, out: Path,
+                     extra: str = "") -> str | None:
         """A look image with the room pinned and GATED (look_pin.check): when the look lost the background (a banner,
         the hoop, a shift), it is made again with the next seed, at most look_pin.MAX_TRIES times; the best try is
         kept. Old runs (no look_pin) and frames without a mask: one plain look, as before."""
         if mask is None or not self.m.get("look_pin"):
-            return self._qwen_look(step, name, frame, view, out)
+            return self._qwen_look(step, name, frame, view, out, extra=extra)
         from . import look_pin
         checks = step.setdefault("look_checks", {}).setdefault(name, [])
         target = step if name == "look" else step.setdefault("parts", {}).setdefault(name, {})
         while True:
             seed = int(self.m["seed"]) + len(checks)
-            outcome = self._qwen_look(step, name, frame, view, out, mask=mask, seed=seed)
+            outcome = self._qwen_look(step, name, frame, view, out, mask=mask, seed=seed, extra=extra)
             if outcome:
                 return outcome
             try:

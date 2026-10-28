@@ -80,12 +80,13 @@ def test_new_edit_and_version(home):
 
 def test_editing_a_builtin_makes_a_copy_and_deleting_it_brings_the_builtin_back(home):
     async def go(c):
+        base = styles.load("anime_cel")["version"]
         s = (await data(await c.post("/api/styles/anime_cel/edit", json={"light": "soft rim light"})))["style"]
-        assert not s["builtin"] and s["has_builtin"] and s["version"] == 2
+        assert not s["builtin"] and s["has_builtin"] and s["version"] == base + 1
         assert (home / "styles" / "anime_cel.json").is_file()
         r = await data(await c.post("/api/styles/anime_cel/delete", json={}))
         assert r["back_to_builtin"] is True
-        assert styles.load("anime_cel")["builtin"] and styles.load("anime_cel")["version"] == 1
+        assert styles.load("anime_cel")["builtin"] and styles.load("anime_cel")["version"] == base
         r = await data(await c.post("/api/styles/anime_cel/delete", json={}), 400)           # a built-in stays
         assert "built-in" in r["error"]
     call(go)
@@ -103,7 +104,7 @@ def test_set_default(home):
 def test_a_character_takes_a_style_shows_as_used_and_stale_and_can_drop_it(home):
     async def go(c):
         r = await data(await c.post("/api/characters/hero/style", json={"style": "anime_cel"}))
-        assert r["character"]["style_ref"] == "anime_cel" and r["character"]["style"] == styles.text("anime_cel")
+        assert r["character"]["style_ref"] == "anime_cel" and r["character"]["style"] == styles.text("anime_cel", light=False)
         words = r["character"]["style"]
         d = {s["name"]: s for s in (await data(await c.get("/api/styles")))["styles"]}
         assert d["anime_cel"]["used_by"]["characters"] == ["hero"] and d["anime_cel"]["stale"]["characters"] == []

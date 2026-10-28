@@ -930,6 +930,9 @@ def _parser() -> JsonArgumentParser:
     n.add_argument("--look-keyframes", choices=("auto", "off"), default=None,
                    help="layout: keyframe looks per clip (auto, default) or none (off: for example when the shot holds "
                         "the real 3D character, whose render already shows every view)")
+    n.add_argument("--prop-keyframes", choices=("auto", "off"), default=None,
+                   help="layout: per clip a keyframe look at the frame where a prop is largest, with the prop drawn from "
+                        "its words (auto, default for new runs) or none (off)")
     n.add_argument("--pose-strength", type=float, default=None,
                    help="layout: + the rig's skeleton as a stage-1 guide (0 = off; default 0)")
     n.add_argument("--pose-body", choices=("standard", "chibi"), default=None, help="the pose guide's skeleton drawing")
@@ -1246,8 +1249,12 @@ def _background(a) -> int:
                                    on_event=emit)
                 r = bgs.stamp_style(r["name"], a.style_preset)
             elif a.action == "from-set":
+                neg = ""
+                if a.style_preset:                    # the preset's excluded looks go into the negative
+                    from . import styles as _styles
+                    neg = (_styles.load(a.style_preset) or {}).get("negative_image") or ""
                 r = bgs.make_set_plate(a.scene, a.shot, bgs.style_words(a.style, a.style_preset), a.seed, a.name,
-                                       on_event=emit)
+                                       on_event=emit, negative_extra=neg)
                 r = bgs.stamp_style(r["name"], a.style_preset)
             elif a.action == "new":
                 r = bgs.make(a.scene, bgs.style_words(a.style, a.style_preset), a.seed, a.name, on_event=emit)
@@ -1703,7 +1710,7 @@ def _dispatch(a) -> int:
                            figure_mask=a.figure_mask, background=a.background,
                            background_text=a.background_text, background_image=a.background_image, background_seed=a.background_seed, **({'background_ground': a.background_ground} if a.background_ground else {}),
                            negative=a.negative,
-                           steps=a.steps, guidance=a.guidance, look_extra=a.look_extra, look_text=a.look_text, look_scene=a.look_scene, sound_text=a.sound_text, **({'proxy': a.proxy} if a.proxy else {}), clip_frames=a.clip_frames, adain=a.adain, relay=a.relay, relay_strength=a.relay_strength, **({'audio_relay': a.audio_relay} if a.audio_relay else {}), **({'target_text': a.target_text} if a.target_text else {}), **({'look_chain': a.look_chain} if a.look_chain else {}), **({'chain_sharpen': a.chain_sharpen} if a.chain_sharpen is not None else {}), **({'chain_colour': a.chain_colour} if a.chain_colour else {}), **({'chain_light': a.chain_light} if a.chain_light else {}), **({'chain_sharpen_mode': a.chain_sharpen_mode} if a.chain_sharpen_mode else {}), **({'chain_sharpen_target': a.chain_sharpen_target} if a.chain_sharpen_target is not None else {}), **({'adain_ref': a.adain_ref} if a.adain_ref else {}), **({'clip_text': a.clip_text} if a.clip_text else {}), **({'pose_strength': a.pose_strength} if a.pose_strength is not None else {}), **({'look_keyframes': a.look_keyframes} if a.look_keyframes else {}), **({'pose_body': a.pose_body} if a.pose_body else {}), **({'clip_videos': {k: t for k, t in a.clip_video}} if a.clip_video else {}), **({'clip_context': a.clip_context} if a.clip_context is not None else {}), **({'character_words': a.character_words} if a.character_words else {}),
+                           steps=a.steps, guidance=a.guidance, look_extra=a.look_extra, look_text=a.look_text, look_scene=a.look_scene, sound_text=a.sound_text, **({'proxy': a.proxy} if a.proxy else {}), clip_frames=a.clip_frames, adain=a.adain, relay=a.relay, relay_strength=a.relay_strength, **({'audio_relay': a.audio_relay} if a.audio_relay else {}), **({'target_text': a.target_text} if a.target_text else {}), **({'look_chain': a.look_chain} if a.look_chain else {}), **({'chain_sharpen': a.chain_sharpen} if a.chain_sharpen is not None else {}), **({'chain_colour': a.chain_colour} if a.chain_colour else {}), **({'chain_light': a.chain_light} if a.chain_light else {}), **({'chain_sharpen_mode': a.chain_sharpen_mode} if a.chain_sharpen_mode else {}), **({'chain_sharpen_target': a.chain_sharpen_target} if a.chain_sharpen_target is not None else {}), **({'adain_ref': a.adain_ref} if a.adain_ref else {}), **({'clip_text': a.clip_text} if a.clip_text else {}), **({'pose_strength': a.pose_strength} if a.pose_strength is not None else {}), **({'look_keyframes': a.look_keyframes} if a.look_keyframes else {}), **({'prop_keyframes': a.prop_keyframes} if a.prop_keyframes else {}), **({'pose_body': a.pose_body} if a.pose_body else {}), **({'clip_videos': {k: t for k, t in a.clip_video}} if a.clip_video else {}), **({'clip_context': a.clip_context} if a.clip_context is not None else {}), **({'character_words': a.character_words} if a.character_words else {}),
                            video_model=a.video_model, profile=a.profile, **_run_prop_options(a))
         if a.note:
             runner.set_note(m["id"], a.note)

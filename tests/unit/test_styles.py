@@ -49,8 +49,9 @@ def _char(home, name="hero", style_ref=None):
 
 def test_a_character_takes_a_styles_words_and_version(home):
     _char(home)
+    base = styles.load("anime_cel")["version"]                     # the built-in's own version (raised by curation)
     c = character.set_style("hero", "anime_cel")
-    assert c["style"] == styles.text("anime_cel", light=False) and c["style_ref"] == "anime_cel" and c["style_version"] == 1
+    assert c["style"] == styles.text("anime_cel", light=False) and c["style_ref"] == "anime_cel" and c["style_version"] == base
     assert not styles.is_stale(c)
     styles.save("anime_cel", {"light": "soft rim light"})             # the style changes: the asset is older now
     assert styles.is_stale(character.load("hero"))
