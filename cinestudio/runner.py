@@ -3975,7 +3975,7 @@ class Run:
             if outcome:
                 return outcome
             try:
-                res = dict(look_pin.check(out, frame, mask), seed=seed)
+                res = dict(look_pin.check(out, frame, mask, plate=self.work / "plate.png"), seed=seed)
             except (ValueError, cv2.error, TypeError, AttributeError) as exc:   # not a readable picture: keep it, say so
                 self.event("look_check_skipped", image=name, reason=f"{type(exc).__name__}: {exc}"[:200])
                 return None
@@ -3987,8 +3987,9 @@ class Run:
             self.save()
             if res["ok"]:
                 return self._offset_look(step, name, out)
-            if len(checks) >= look_pin.MAX_TRIES:                  # none passed: the best try (fewest lost tiles,
-                best = min(checks, key=lambda r: (r["lost_tiles"], -r["ssim"]))   # then the highest SSIM)
+            if len(checks) >= look_pin.MAX_TRIES:                  # none passed: the best try (a kept pose, then the
+                bad_pose = lambda r: r.get("pose_iou") is not None and r["pose_iou"] < look_pin.POSE_MIN_IOU   # noqa
+                best = min(checks, key=lambda r: (bad_pose(r), r["lost_tiles"], -r["ssim"]))   # fewest lost tiles,
                 shutil.copyfile(out.with_name(best["file"]), out)
                 self.event("look_check_failed", image=name, kept=best["file"],
                            note="no try kept the whole background; the best one is used")

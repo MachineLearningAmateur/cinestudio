@@ -711,6 +711,13 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   new figure on the old background 39.8, aligned + blurred 30.5. So the cause is the exact alignment, not the VAE
   texture. The kept look is now moved 6 px right and 4 px down at 1344x784 (look_pin.offset, state `look_offsets`,
   event `look_offset`); the gate's tries keep the unmoved picture.
+  **The gate also checks the POSE (2026-10-28, user: "let's add a pose check"; look_pin.drawn_figure):** Qwen can
+  copy the pose of Picture 2 (the front view) instead of the layout's: r20261027-030830-6152's look stood with the
+  arms down where frame 1 had a hand on the hip and an arm out, and the video started standing. With the run's
+  plate.png the drawn character = where the look differs from the plate (fitted to the frame's colours outside the
+  figure, holes filled); its IoU with the figure mask must be >= POSE_MIN_IOU 0.47 (lost poses measured 0.35-0.38,
+  kept 0.64-0.70 on the gate's unmoved tries); a failed pose makes the look again with seed+1, and when no try
+  passes, a kept pose wins first. No plate (a panorama) or a plate that does not fit the frame: no pose check.
 - Long shots: 121-frame clips with 25 shared frames; latent relay (clip k-1's last latents as a guide), `look_chain prev`
   (the previous clip's frame at this clip's start as its look, sharpened to clip 1's sharpness x1.5 preview / x1.0
   final), `chain_light tone` (lightness, chroma and contrast of the background held to clip 1's own first frame:
@@ -922,6 +929,27 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
 ### 7.4 Known limits
 - Colour drift through the chain (a black suit to bronze in later clips): the fixes in 7.1 reduce it; a FRESH look of a
   clip's start frame (`run retake --look-image FILE --keyframe off`) repairs one clip (Qwen cannot draw a back view).
+- **Light that grows through the chain (2026-10-28, 2D anime cel on shan_shen_bu_balls, final, seed 303):** LTX
+  redrew the EXIT signs of clip 2 as white glows (green lost; sign area L 9.8 -> 15.3) and clip 3, which starts from
+  clip 2's frame, made them lamps (L 26.7) with a hard floor shadow; each clip is flat inside, the step is at its first
+  frame. Triggers: style light words that ask for it ("a soft glow around lamps and lit signs", "light from one clear
+  direction, hard-edged shadow shapes", "rim light"); dropping them (r20261028-093724-0030) brought the green back but
+  not the size. `chain_light` (a background mean) does not see a small glow; `chain_grade local` removed clip 2's glow
+  but stops at its 0.5 gain floor (clip 3 kept a grey halo) and cannot restore a hue. The repair: a FRESH pinned look
+  of the clip's start frame (the run's `_pinned_look` on the clean layout frame, gate passed at once) + `run retake
+  --clip 3 --look-image` (keyframes kept): green signs, no halo, no floor shadow (sign L 16.1 raw, 9.3 graded).
+- **A held END POSE that is not the sheet's standing pose (2026-10-28, user: "the ball hold pose is wrong"):** the
+  automatic tail keyframe (`look_k{k}_tail`: the sheet's FRONT panel pasted into the last layout frame, against a
+  mask turning into a face in a long held end) gives LTX a second, standing pose; LTX drew a mix (the feet apart, the
+  free arm down instead of on the hip) in the 3D run 6152 and in the 2D runs. Same seed, look and face keyframe,
+  only the tail keyframe removed: the layout's ta-da pose came back (take 2 vs take 1). The face keyframe at frame 8
+  did not change the pose: early in a clip the relay frames and the motion lead. Open: the caught ball. With the tail
+  keyframe the ball stayed (on an open palm); without it the ball was lost (take 2), also with a Qwen keyframe of the
+  layout's end frame with the ball at frame 80 (take 3: Qwen drew it dark and small; that take also lost the floor's
+  colour).
+- **The join grade keeps a pixel's colour balance (video.GAIN_TINT 0.2):** each channel of the gain map stays within
+  +-20% of the pixel's mean gain. Before, a violet floor's map (0.87/0.84/0.57) turned white shin bandages yellow where
+  LTX had drawn the character 70 px beside the layout's figure mask (the character gain applies only inside it).
 - In orbits the body turns ~30 deg ahead of the camera; LTX may invent props the layout does not show.
 - The pose guide (`--pose-strength`) gave no gain and hurt joins: off. Also harmful in blind tests: `--chain-colour
   look|match` (a blue jacket, seams) and `--look-chain anchor` (the front view's background pasted into back views);

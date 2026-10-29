@@ -1803,6 +1803,22 @@ def test_the_local_gain_map_undoes_a_regional_change():
     assert 0.5 <= float(m.min()) and float(m.max()) <= 2.0
 
 
+def test_the_gain_map_limits_a_colour_shift_per_pixel():
+    """video.gain_map (2026-10-28, the yellow bandages): a strong blue cut of a violet floor is kept within +-tint of
+    the pixel's mean gain, so a white part over that floor keeps most of its blue; tint None keeps the old map."""
+    import numpy as np
+    from cinestudio import video
+    ref = np.full((60, 100, 3), 60, np.uint8)
+    this = ref.copy()
+    this[..., 2] = 105                                   # the floor came out much bluer (blue ratio 0.57)
+    m = video.gain_map([(ref, this, None)], sigma=4)
+    free = video.gain_map([(ref, this, None)], sigma=4, tint=None)
+    mean = free.mean(axis=-1)                            # the limit is taken from the free map's mean gain
+    assert float((m[..., 2] / mean).min()) >= 0.8 - 1e-3
+    assert float((m[..., 0] / mean).max()) <= 1.2 + 1e-3
+    assert abs(float(free[30, 50, 2]) - 60 / 105) < 0.03
+
+
 def test_the_gain_map_writer_gives_the_character_its_own_gain(tmp_path):
     """video.apply_gain_map with fig_masks + fig_gain: inside the frame's mask the character's gain, outside the map."""
     import cv2

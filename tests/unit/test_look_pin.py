@@ -62,6 +62,34 @@ def test_the_gate_passes_a_kept_room_and_fails_a_lost_one(tmp_path):
     assert not bad["ok"] and bad["reasons"], bad
 
 
+def test_the_gate_fails_a_look_that_lost_the_layout_pose(tmp_path):
+    """look_pin.check with the plate (2026-10-28): a character drawn in the figure's place passes; one drawn standing
+    with the arm that the layout holds out missing (Qwen copied the front view's pose) fails on the pose IoU; without a
+    plate there is no pose check."""
+    plate = np.full((448, 768, 3), 70, np.uint8)
+    cv2.line(plate, (0, 300), (767, 300), (120, 120, 120), 3)
+    mask = np.zeros((448, 768), np.uint8)
+    cv2.rectangle(mask, (360, 80), (410, 380), 255, -1)             # the body
+    cv2.rectangle(mask, (410, 150), (520, 175), 255, -1)            # an arm held out to the side
+    frame = plate.copy()
+    frame[mask > 0] = (230, 230, 230)                               # the white mannequin
+    cv2.imwrite(str(tmp_path / "plate.png"), plate)
+    cv2.imwrite(str(tmp_path / "frame.png"), frame)
+    cv2.imwrite(str(tmp_path / "mask.png"), mask)
+    kept = plate.copy()
+    kept[mask > 0] = (150, 40, 150)                                 # the character in the same pose
+    lost = plate.copy()
+    cv2.rectangle(lost, (320, 80), (370, 380), (150, 40, 150), -1)  # standing beside the figure's place, the arm
+    cv2.rectangle(lost, (296, 150), (318, 300), (150, 40, 150), -1)  # not held out but hanging down
+    for name, im in (("kept", kept), ("lost", lost)):
+        cv2.imwrite(str(tmp_path / f"{name}.png"), cv2.resize(im, (1344, 784)))
+    ok = look_pin.check(tmp_path / "kept.png", tmp_path / "frame.png", tmp_path / "mask.png", plate=tmp_path / "plate.png")
+    bad = look_pin.check(tmp_path / "lost.png", tmp_path / "frame.png", tmp_path / "mask.png", plate=tmp_path / "plate.png")
+    assert ok["ok"] and ok["pose_iou"] >= look_pin.POSE_MIN_IOU, ok
+    assert not bad["ok"] and any(r.startswith("pose IoU") for r in bad["reasons"]), bad
+    assert look_pin.check(tmp_path / "lost.png", tmp_path / "frame.png", tmp_path / "mask.png")["pose_iou"] is None
+
+
 def test_offset_moves_the_look_without_resampling(tmp_path):
     img = np.random.default_rng(1).integers(0, 255, (784, 1344, 3), dtype=np.uint8)
     p = tmp_path / "look.png"
@@ -90,6 +118,7 @@ def test_the_run_moves_the_kept_look_and_records_it(tmp_path, monkeypatch):
 
     class Stub:
         m = {"look_pin": True, "seed": 303}
+        work = tmp_path                                                 # no plate.png: no pose check
         events: list = []
         _pinned_look = runner.Run._pinned_look
         _offset_look = runner.Run._offset_look

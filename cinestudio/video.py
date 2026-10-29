@@ -169,12 +169,21 @@ def levels_yuv(src: str | Path, dst: str | Path, a: float, b: float) -> None:
     _run(args + [str(dst)])
 
 
-def gain_map(pairs: list, sigma: float = 16.0, lo: float = 0.5, hi: float = 2.0):
+GAIN_TINT = 0.2      # each channel of a gain map stays within +-20% of the pixel's mean gain (user, 2026-10-28: "why
+#                      did the bandage turn yellow"): in r20261028-093724-0030 clip 3 the violet floor's map was
+#                      0.87/0.84/0.57 (RGB) at the shins, LTX had drawn the character 70 px beside the layout's figure
+#                      mask, so the white bandages got the floor's blue cut and came out yellow (RGB 223,224,212 ->
+#                      198,191,132)
+
+
+def gain_map(pairs: list, sigma: float = 16.0, lo: float = 0.5, hi: float = 2.0, tint: float = GAIN_TINT):
     """The LOCAL colour ratio of two versions of the same frames, PER CHANNEL (a grey map left the doors brown where
     the reference had them maroon): `pairs` = [(reference RGB, this RGB, background mask (True = background) or
     None), ...]; per pair and channel a smooth ratio blur(ref * w) / blur(this * w) over the background (normalized
     convolution), where little background is near (the character) the pair's global ratio of that channel; the
-    median of the pairs, limited to [lo, hi] (the upper wall needed ~1.9), smoothed once more.
+    median of the pairs, limited to [lo, hi] (the upper wall needed ~1.9), smoothed once more; each channel then kept
+    within +-`tint` of the pixel's mean gain (a colour shift of the background must not turn a white part that LTX drew
+    outside the layout's figure mask yellow; None = no limit).
     -> H x W x 3 float32 (multiply `this` by it to match `ref`)."""
     import cv2
     import numpy as np
@@ -193,7 +202,11 @@ def gain_map(pairs: list, sigma: float = 16.0, lo: float = 0.5, hi: float = 2.0)
             chans.append(alpha * (A / np.maximum(B, 2.0)) + (1 - alpha) * glob)
         maps.append(np.stack(chans, axis=-1))
     m = np.clip(np.median(np.stack(maps), axis=0), lo, hi).astype(np.float32)
-    return cv2.GaussianBlur(m, (0, 0), sigma / 2)
+    m = cv2.GaussianBlur(m, (0, 0), sigma / 2)
+    if tint is not None:
+        mean = m.mean(axis=-1, keepdims=True)
+        m = np.clip(m, mean * (1 - tint), mean * (1 + tint))
+    return m.astype(np.float32)
 
 
 def read_rgb_frames(src: str | Path, width: int, height: int):

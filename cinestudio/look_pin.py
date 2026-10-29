@@ -19,6 +19,13 @@ it. Three changes, all on the look step only (character edits and set redraws ar
    with the layout pixel for pixel made the whole video ~35% darker (diagnosis 2026-10-26, preview clip 1, seed
    303, .cinestudio/gauntlet/look_pin_ab: aligned 27.9 / 27.0 (the same look twice), the old unaligned look 42.7,
    aligned + 6/4 px move 39.9, aligned + resize 39.5, aligned + blur 30.5: the alignment, not the VAE texture).
+5. POSE (2026-10-28, user: "let's add a pose check"): the gate also asks whether the character was drawn in the
+   layout figure's POSE. With the run's backplate: where the look differs from the plate (fitted to the layout frame's
+   colours outside the figure) is the drawn character; its overlap (IoU) with the layout's figure mask must reach
+   POSE_MIN_IOU. Qwen can copy the pose of Picture 2 (the character's front view) instead: r20261027-030830-6152's
+   look stood with the arms down where the layout had a hand on the hip and an arm out, and the video started
+   standing (IoU 0.35; its other try 0.38; the sheet's standing tail keyframe over a ta-da end 0.36; looks that kept
+   the pose 0.55 and 0.59). Without a plate (a panorama) or with a plate that does not fit the frame, no pose check.
 """
 from __future__ import annotations
 
@@ -34,6 +41,8 @@ GATE_EXCLUDE = 0.04         # the gate ignores the figure dilated by this part o
 MAX_TRIES = 3
 GATE_WIDTH = 768            # the gate measures at the video's preview width
 OFFSET = (6 / 1344, 4 / 784)   # the move of the kept look (part of the width, height): 6 px right, 4 px down
+POSE_MIN_IOU = 0.47         # the drawn character vs the layout's figure mask (lost poses 0.35-0.38, kept 0.55-0.59)
+POSE_MAX_NOISE = 30.0       # the plate fits the frame worse than this (Lab, 95th percentile): no pose check
                                # at the edit size = the move that measured bright (docs: point 4 above)
 
 
@@ -134,11 +143,39 @@ def graph_edit(mask_node: str = "look_mask"):
     return edit
 
 
-def check(look: str | Path, frame: str | Path, mask_png: str | Path) -> dict:
+def drawn_figure(look: np.ndarray, frame: np.ndarray, plate: np.ndarray, fig: np.ndarray) -> tuple[np.ndarray, float]:
+    """Where the look shows the CHARACTER (all three pictures the same size, `fig` = the layout's figure mask): the
+    pixels near the figure where the look differs from the plate, after the plate is fitted to the layout frame's
+    colours outside the figure (per channel gain + offset); holes inside the outline filled (a black suit on a dark
+    floor). -> (mask, the plate's fit noise: the 95th percentile Lab difference of frame and plate beside the figure)."""
+    h = fig.shape[0]
+    disk = lambda r: cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))   # noqa: E731
+    region = cv2.dilate(fig.astype(np.uint8), disk(max(2, int(0.08 * h)))) > 0
+    bg = ~(cv2.dilate(fig.astype(np.uint8), disk(max(1, int(0.02 * h)))) > 0)
+    cal = plate.astype(np.float32).copy()
+    if bg.sum() > 100:
+        for c in range(3):
+            a, b = plate[..., c][bg].astype(np.float32), frame[..., c][bg].astype(np.float32)
+            g, o = np.linalg.lstsq(np.vstack([a, np.ones_like(a)]).T, b, rcond=None)[0]
+            cal[..., c] = plate[..., c] * g + o
+    cal = np.clip(cal, 0, 255).astype(np.uint8)
+    lab = lambda im: cv2.cvtColor(im, cv2.COLOR_BGR2LAB).astype(np.float32)   # noqa: E731
+    near = bg & region
+    noise = float(np.percentile(np.linalg.norm(lab(frame) - lab(cal), axis=-1)[near], 95)) if near.any() else 0.0
+    drawn = (np.linalg.norm(lab(look) - lab(cal), axis=-1) > max(12.0, noise * 1.5)) & region
+    drawn = cv2.morphologyEx(drawn.astype(np.uint8), cv2.MORPH_OPEN, disk(1))
+    drawn = cv2.morphologyEx(drawn, cv2.MORPH_CLOSE, disk(max(1, int(0.012 * h))))
+    ff = np.pad(drawn, 1).copy()
+    cv2.floodFill(ff, None, (0, 0), 1)
+    return (drawn > 0) | (ff[1:-1, 1:-1] == 0), noise
+
+
+def check(look: str | Path, frame: str | Path, mask_png: str | Path, plate: str | Path | None = None) -> dict:
     """Does the look keep the layout frame's background? Outside the figure (dilated by GATE_EXCLUDE): ECC affine fit
     of the look to the frame (shift, scale), then SSIM, edge recall (layout edges found within 3 px) and lost tiles
     (tiles with many layout edges of which < 40% are kept). -> {ok, ssim, edge_recall, lost_tiles, shift_px, scale,
-    reasons}. Thresholds from 22 past looks (docs/look_image_research.md option 3)."""
+    reasons}. Thresholds from 22 past looks (docs/look_image_research.md option 3). With the run's backplate also the
+    POSE: `pose_iou` of the drawn character (drawn_figure) and the layout's figure mask (None = not measured)."""
     ref = cv2.imread(str(frame), cv2.IMREAD_COLOR)
     img = cv2.imread(str(look), cv2.IMREAD_COLOR)
     h0, w0 = ref.shape[:2]
@@ -185,6 +222,15 @@ def check(look: str | Path, frame: str | Path, mask_png: str | Path) -> dict:
     # (SSIM 0.957-0.966, recall 0.83-0.86, 15-21 lost tiles, 3.3 px) and 1 that lost the hoop, a banner and the EXIT
     # signs (SSIM 0.770, recall 0.64, 41 tiles, 20.8 px); pinned looks should be far better
     reasons = []
+    pose_iou = None
+    pl = cv2.imread(str(plate), cv2.IMREAD_COLOR) if plate and Path(plate).is_file() else None
+    if pl is not None and abs(pl.shape[1] / pl.shape[0] - w0 / h0) < 0.02:      # a plate made for this frame shape
+        pl = cv2.resize(pl, (w, h), interpolation=cv2.INTER_AREA)
+        drawn, noise = drawn_figure(img, ref, pl, fig)
+        if noise <= POSE_MAX_NOISE and fig.any():
+            pose_iou = float((drawn & fig).sum() / max((drawn | fig).sum(), 1))
+            if pose_iou < POSE_MIN_IOU:
+                reasons.append(f"pose IoU {pose_iou:.2f}")
     if lost >= 30:
         reasons.append(f"{lost} background tiles lost")
     if shift > 8:
@@ -196,7 +242,8 @@ def check(look: str | Path, frame: str | Path, mask_png: str | Path) -> dict:
     if recall < (0.60 if textured else 0.75):
         reasons.append(f"edge recall {recall:.2f}")
     return {"ok": not reasons, "ssim": round(ssim, 4), "edge_recall": round(recall, 3), "lost_tiles": lost,
-            "shift_px": round(shift, 2), "scale": round(scale, 4), "textured": bool(textured), "reasons": reasons}
+            "shift_px": round(shift, 2), "scale": round(scale, 4), "textured": bool(textured),
+            "pose_iou": None if pose_iou is None else round(pose_iou, 3), "reasons": reasons}
 
 
 def _ssim(a: np.ndarray, b: np.ndarray, where: np.ndarray) -> float:
