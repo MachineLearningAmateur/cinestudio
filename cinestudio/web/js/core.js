@@ -253,8 +253,9 @@ function closeOverlay(id) {
 }
 
 // the LTX video style LoRAs: not the control LoRAs (IC-LoRA, Layout-To-Render) and not the image-model LoRAs (Qwen-Image-Edit:
-// AnyPose, Multiple-Angles, Lightning; Qwen-Image: 360 diffusion), which cannot load into LTX
-const NOT_STYLE_LORA = /ic-lora|lightning|multiple-angles|anypose|minimax|qwen|360-diffusion|layout-to-render/i;
+// AnyPose, Multiple-Angles, Lightning; Qwen-Image: 360 diffusion), which cannot load into LTX. The LTX 2.5 distilled
+// LoRA is an internal second-stage refinement component, not a selectable style.
+const NOT_STYLE_LORA = /ic-lora|lightning|multiple-angles|anypose|minimax|qwen|360-diffusion|layout-to-render|(?:^|[\\/])ltx-2\.5-22b-distilled-lora-450-bf16\.safetensors$/i;
 const styleLoras = () => (state.loras || []).filter((l) => !NOT_STYLE_LORA.test(l));
 
 async function loadLoras() {

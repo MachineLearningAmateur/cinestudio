@@ -1,0 +1,10 @@
+{
+ "label": "Live action realistic",
+ "version": 2,
+ "words": "a real-world live-action photograph captured with a physical camera, true-to-life human proportions, natural skin detail, ordinary real fabrics and materials with subtle wear, believable texture and color, candid photographic realism",
+ "light": "natural, practical real-world lighting with soft variations and believable shadows",
+ "negative_image": "3D render, CGI, computer graphics, game graphics, unreal engine, computer-generated, cartoon, anime, illustration, plastic toy, stylized, perfectly smooth surfaces, watermark",
+ "lora": null,
+ "reference": null,
+ "_about": "A realistic live-action style for characters, backgrounds and videos. Initial wording; visual consistency across the pipeline has not yet been evaluated."
+}

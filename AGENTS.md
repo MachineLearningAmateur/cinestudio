@@ -115,7 +115,8 @@ templates/                  library/<name>/ = BUILT-IN templates (shot.blend wit
 backgrounds/library/        BUILT-IN backgrounds (plate.png or pano.png, bg.json, set.png), read-only
 characters/library/         BUILT-IN characters (character.json with ./ paths + front, views, sheet; kit inside), read-only
 styles/library/             BUILT-IN styles (<name>.json)
-setup/                      install (install_linux.sh, requirements, runtime.lock.json), models.json (pinned model
+setup/                      install (install_linux.sh, check_linux.py gates + manual render check, lock_linux.py,
+                            linux/ hash-pinned Python/CUDA dependencies, requirements, runtime.lock.json), models.json (pinned model
                             files per tier), graph generators (make_layout_graphs.py, make_redraw_graphs.py,
                             make_txt2img_graphs.py),
                             export_template.py, export_character.py (a user character -> built-in), measuring tools (brightness_check, join_check, dwpose_score, ...)
@@ -660,7 +661,8 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   - **Use the STYLE LIBRARY (2026-10-25):** `style list|show|new|edit|delete|set-default` (cinestudio/styles.py; MCP
     `list_styles`, `set_character_style`; built-ins in styles/library: `3d_animated` (default), `anime_cel` (since v2, 2026-10-27, the curated 2D
     anime cel words, light and negatives of docs/anime_cel_style_research.md), `anime_noir` ("Anime noir 3D", the
-    style of the built-in Masked and of gym_noir_comfyui); the user's
+    style of the built-in Masked and of gym_noir_comfyui), `live_action_realistic` (photographic human, fabric and
+    material words; initial wording, not yet validated end to end); the user's
     copies in <home>/styles win, e.g. 3d_animated + the 3dsrx LoRA at 0.4). Give assets a style by NAME, not by copied
     words: `character use-style NAME STYLE`, `background new|plate|from-set
     --style-preset STYLE`, `run new --style-preset STYLE` (words + the style's LoRA; without words or preset a run takes
@@ -1039,12 +1041,29 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   The app HIDES the Comfy Cloud key and the Run on choice (user, 2026-10-25; web/js/settings.js `SHOW_COMFY_CLOUD`):
   Cloud's support of the 4 LTXVideo pack nodes and the gated IC-LoRAs is unverified (docs/comfy_cloud_compat.md).
 - RunPod: docs/RUNPOD.md (`bash setup/install_linux.sh --tier T` inside tmux on a stock PyTorch CUDA 13.0 pod with a
-  network volume; not yet tested on a pod: its section 6 lists the first-session checks). The code reaches the pod by
-  `git clone` of the private GitHub repo (MachineLearningAmateur/cinestudio, branch `main`, a read-only token). The
+  network volume; initial pod checks are in section 6). The code reaches the pod by
+  `git clone` of the public GitHub repo (MachineLearningAmateur/cinestudio, branch `main`; no token needed). The
+  models can be preloaded with RunPod's S3 API while no pod runs (docs/RUNPOD.md): normal files go under models/;
+  @aux/ckpts entries go under models/controlnet_aux_ckpts/. The model downloader needs no GPU; use an isolated home
+  for staging so the PC's tier stays unchanged. Verify sizes after S3 upload and SHA-256 on the pod before generation.
+  S3 access key = user ID, secret = rps_ key; never print credential-page snapshots or place keys in command lines.
   script pins torch (setup/runtime.lock.json `torch.linux_versions`; default cu130 = 2.12.1: the cu128 index ends at 2.11).
+  Linux dependencies (including transitives) are version/hash-pinned in setup/linux/ for Python 3.12/3.13 and both
+  CUDA builds. After changing runtime.lock.json or requirements.txt, regenerate with `python setup/lock_linux.py`
+  (uv required) and validate on a pod; the input/hash manifest refuses stale locks. The installer stops on bad
+  drivers, failed two-process lock exclusion/release, pip check, final torch/CUDA imports or GPU access. Its doctor
+  gate skips only offline services (and models when --skip-models is explicit); --skip-models still sets the tier.
+  `setup/check_linux.py render` is a manual idle-GPU Workbench + EEVEE smoke test (64px PNGs and a log retained in
+  <home>/cache/setup_checks). Built-in previews are not the run's body/kit-specific passes; Blender renders those
+  on the pod, then matching runs reuse the pass cache. Preview and final videos completed on the first pod; the
+  remaining checks in docs/RUNPOD.md section 6 still need testing.
   Pod facts (static audit 2026-10-26): a container sees the HOST's RAM in psutil, so RAM checks read the cgroup limit
-  (sysinfo.total_ram); the locks need flock on the volume (the install checks it; locks.py raises other lock errors
-  instead of reporting "busy"); the tunnel's local port must be 8765 (the app's Host check).
+  (sysinfo.total_ram); the locks need flock on the volume (the install checks exclusion and release; locks.py raises other lock errors
+  instead of reporting "busy"); the tunnel's local port must match the app's configured port (the app's Host check).
+- First pod check (2026-10-29): RTX PRO 6000, RunPod PyTorch CUDA 13.0 / Ubuntu 24.04, Python 3.13: the lock test,
+  CUDA imports, model SHA-256 checks, app over SSH and headless Workbench/EEVEE smoke renders passed. A requirements
+  file's `--index-url` clears pip's extra index: the Comfy locks omit it so pip can find the pinned CUDA wheels.
+  Runtime + app venv occupied ~19 GiB. Preview and final videos completed; wide-shot face detail still needs work.
 
 ## 11. Development
 

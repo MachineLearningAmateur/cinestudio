@@ -1,0 +1,11 @@
+{
+  "setup/requirements.txt": "78701fc7d872d6f4baf672165bcbf93ab192f611f48b0a12db20bd161e5e89a8",
+  "setup/runtime.lock.json": "b369be0c7d09b1eafc87fd7ef0da31a17fcaced1e80f63b938466080ab7ecaff",
+  "setup/linux/app-py3.12.txt": "9c1dc3f3812aefbb9fc2fa20a15e8d75f2b73c6b182c29da2a994097abb30d5f",
+  "setup/linux/app-py3.13.txt": "9c1dc3f3812aefbb9fc2fa20a15e8d75f2b73c6b182c29da2a994097abb30d5f",
+  "setup/linux/comfy-py3.12-cu128.txt": "4da327be9d04ed1ff42f5e3ad0d9b3367922fbbe2bf86585d6ebacb03feb3b9a",
+  "setup/linux/comfy-py3.12-cu130.txt": "c8139366b1f11d84bf50b7106d4818a1e2e079bc8603fe741e7dd90bfd562ce6",
+  "setup/linux/comfy-py3.13-cu128.txt": "d2682f2e567d7569628d00334173a6829252195b9f65262192b3992a5e4a4542",
+  "setup/linux/comfy-py3.13-cu130.txt": "2717ae9d5a82be1501f7ce55998091585061835ea90c0e9618a1844140e1976e",
+  "setup/linux/sageattention.txt": "ce5ff09c7e7b7474dc76d6ba91954f5b23ecbd96f599645d3014d9e0028d5668"
+}

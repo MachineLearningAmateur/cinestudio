@@ -28,33 +28,47 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ "$TIER" = "24gb" ] && { echo "note: the 24gb tier is now called 'large' (80 GB+ GPU)"; TIER="large"; }
-[ -n "$TIER" ] || { echo "--tier 8gb or --tier large is needed" >&2; exit 2; }
+case "$TIER" in 8gb|large) ;; *) echo "--tier 8gb or --tier large is needed" >&2; exit 2;; esac
+case "$CUDA" in cu130) MIN_DRIVER=580;; cu128) MIN_DRIVER=570;; *) echo "--cuda must be cu130 or cu128" >&2; exit 2;; esac
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 LOCK="$REPO/setup/runtime.lock.json"
 say() { printf '\n== %s\n' "$*"; }
-lock() { python3 -c "import json,sys; d=json.load(open('$LOCK')); print(eval(sys.argv[1], {}, {'d': d}))" "$1"; }
+lock() { "$PY" -c 'import json,sys; d=json.load(open(sys.argv[1])); print(eval(sys.argv[2], {}, {"d": d}))' "$LOCK" "$1"; }
 
 say "checks"
 command -v python3 >/dev/null || { echo "python3 is missing" >&2; exit 1; }
 # the venvs need Python 3.12+ (numpy 2.5.4 in setup/requirements.txt requires it; Codex review 2026-10-24)
 PY=""
 for c in python3.13 python3.12 python3; do
-  if command -v "$c" >/dev/null && "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)'; then PY="$c"; break; fi
+  if command -v "$c" >/dev/null && "$c" -c 'import sys; sys.exit(0 if sys.version_info[:2] in ((3, 12), (3, 13)) else 1)'; then PY="$c"; break; fi
 done
-[ -n "$PY" ] || { echo "Python 3.12 or newer is needed (for example: apt install python3.12 python3.12-venv, or uv python install 3.12)" >&2; exit 1; }
+[ -n "$PY" ] || { echo "Python 3.12 or 3.13 is needed (the Linux dependency locks cover these versions)" >&2; exit 1; }
+PY_VERSION=$("$PY" -c 'import sys; print("%s.%s" % sys.version_info[:2])')
+"$PY" "$REPO/setup/check_linux.py" pins --python-version "$PY_VERSION" --cuda "$CUDA"
 echo "  Python: $($PY --version)"
 if command -v nvidia-smi >/dev/null; then
   nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
   # cu130 torch needs a host driver >= 580 (CUDA 13.0); an older host gives torch.cuda.is_available() == False
   DRV=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader | head -1 | cut -d. -f1)
-  if [ "$CUDA" = "cu130" ] && [ -n "$DRV" ] && [ "$DRV" -lt 580 ] 2>/dev/null; then
-    echo "WARNING: the host driver is $DRV (< 580): cu130 torch will not see the GPU. Pick a pod with CUDA 13.0" \
-         "(RunPod's CUDA filter, or a *-cu1300-* image) or use --cuda cu128 (untested)." >&2
+  if [ -n "$DRV" ] && [ "$DRV" -lt "$MIN_DRIVER" ] 2>/dev/null; then
+    echo "ERROR: the host driver is $DRV (< $MIN_DRIVER required for $CUDA). Pick a pod with a compatible" \
+         "host driver, or select a supported --cuda build. Installation stopped before downloads." >&2
+    exit 1
   fi
 else
-  echo "warning: no nvidia-smi (no GPU?)"
+  echo "ERROR: nvidia-smi is missing; use an NVIDIA GPU pod with driver access." >&2
+  exit 1
 fi
-mkdir -p "$ROOT" "$MODELS"
+export CINESTUDIO_HOME="${CINESTUDIO_HOME:-/workspace/cinestudio-home}"
+mkdir -p "$ROOT" "$MODELS" "$CINESTUDIO_HOME"
+# Fail before installs/downloads when the volume cannot enforce the queue's locks.
+"$PY" "$REPO/setup/check_linux.py" locks --home "$CINESTUDIO_HOME"
+
+check_venv() {
+  actual=$("$1" -c 'import sys; print("%s.%s" % sys.version_info[:2])')
+  [ "$actual" = "$PY_VERSION" ] || { echo "ERROR: $1 uses Python $actual; expected $PY_VERSION." \
+    "Use a matching venv before rerunning (no existing venv was deleted)." >&2; exit 1; }
+}
 
 if command -v apt-get >/dev/null && [ "$(id -u)" = "0" ]; then
   say "system packages (git, curl, Blender's libraries)"
@@ -68,8 +82,9 @@ fi
 
 say "the app (venv + requirements)"
 [ -x "$REPO/.venv/bin/python" ] || "$PY" -m venv "$REPO/.venv"
-"$REPO/.venv/bin/python" -m pip install -q --upgrade pip
-"$REPO/.venv/bin/python" -m pip install -q -r "$REPO/setup/requirements.txt"
+check_venv "$REPO/.venv/bin/python"
+"$REPO/.venv/bin/python" -m pip install -q --require-hashes -r "$REPO/setup/linux/app-py$PY_VERSION.txt"
+"$REPO/.venv/bin/python" -m pip check
 
 say "ComfyUI $(lock "d['comfyui']['version']")"
 CU="$ROOT/ComfyUI"
@@ -78,15 +93,13 @@ git -C "$CU" fetch -q origin
 git -C "$CU" checkout -q "$(lock "d['comfyui']['commit']")"
 [ -x "$CU/.venv/bin/python" ] || "$PY" -m venv "$CU/.venv"
 CPY="$CU/.venv/bin/python"
-"$CPY" -m pip install -q --upgrade pip
+check_venv "$CPY"
 TORCH_VER=$(lock "d['torch']['linux_versions'].get('$CUDA', '')")
 [ -n "$TORCH_VER" ] || { echo "--cuda must be one of: $(lock "' '.join(d['torch']['linux_versions'])")" >&2; exit 2; }
 [ "$CUDA" = "cu130" ] || echo "note: --cuda $CUDA installs torch $TORCH_VER (untested; the tested build is $(lock "d['torch']['tested']"))"
-if ! "$CPY" -c "import torch; assert torch.cuda.is_available() and torch.__version__.split('+')[0] == '$TORCH_VER'" 2>/dev/null; then
-  # pinned: pip resolves torchvision / torchaudio to the releases made for this torch
-  "$CPY" -m pip install -q "torch==$TORCH_VER" torchvision torchaudio --index-url "https://download.pytorch.org/whl/$CUDA"
-fi
-"$CPY" -m pip install -q -r "$CU/requirements.txt"
+# Resolve nothing at install time: the locks include the node packs and CUDA dependencies too.
+"$CPY" -m pip install -q --require-hashes --extra-index-url "https://download.pytorch.org/whl/$CUDA" \
+  -r "$REPO/setup/linux/comfy-py$PY_VERSION-$CUDA.txt"
 
 say "node packs (only the ones the pipeline uses)"
 n=$(lock "len(d['node_packs'])")
@@ -96,10 +109,15 @@ for i in $(seq 0 $((n - 1))); do
   [ -d "$dst/.git" ] || git clone -q "$repo" "$dst"
   git -C "$dst" fetch -q origin
   git -C "$dst" checkout -q "$commit"
-  [ -f "$dst/requirements.txt" ] && "$CPY" -m pip install -q -r "$dst/requirements.txt"
   echo "  $name @ ${commit:0:7}"
 done
-if [ "$SAGE" = "1" ]; then "$CPY" -m pip install -q "sageattention==$(lock "d['sageattention']['tested']")" || echo "warning: SageAttention did not install (optional)"; fi
+if [ "$SAGE" = "1" ]; then
+  "$CPY" -m pip install -q --require-hashes --no-deps -r "$REPO/setup/linux/sageattention.txt" \
+    || echo "warning: SageAttention did not install (optional)"
+fi
+"$CPY" -m pip check
+say "CUDA in the completed ComfyUI environment"
+"$CPY" "$REPO/setup/check_linux.py" cuda --torch-version "$TORCH_VER" --cuda "$CUDA"
 
 say "models folder on the volume ($MODELS)"
 # every node pack that reads ComfyUI's own models folder (SAM 2 does) then sees the volume; nothing is copied
@@ -159,19 +177,6 @@ cd "$REPO"
 APY="$REPO/.venv/bin/python"
 "$APY" -m cinestudio comfy detect | tail -1
 
-# the queue, job and engine locks live in CINESTUDIO_HOME (on the network volume): they need flock
-if ! "$APY" - "$CINESTUDIO_HOME" <<'PY'
-import fcntl, pathlib, sys
-p = pathlib.Path(sys.argv[1]) / ".flock_test"
-with open(p, "a+b") as fh:
-    fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-p.unlink()
-PY
-then
-  echo "WARNING: file locks (flock) do not work in $CINESTUDIO_HOME: set CINESTUDIO_HOME to a local disk in" \
-       "$ROOT/env.sh (the queue and the jobs need them)." >&2
-fi
-
 if [ -n "${HF_TOKEN:-}" ]; then
   # keep it for later downloads from the app (Quick setup, optional features); the environment still wins
   printf '%s' "$HF_TOKEN" | "$APY" -m cinestudio settings token set hf | tail -1
@@ -186,18 +191,21 @@ if [ "$SKIP_MODELS" != "1" ]; then
   say "models of the $TIER tier (resumable; checked by SHA-256; selects the tier when complete)"
   "$APY" -m cinestudio models download --tier "$TIER" | tail -1
 fi
+# --skip-models defers downloads, but must still select the requested tier.
+"$APY" -m cinestudio settings tier "$TIER" --force | tail -1
 
 say "doctor"
-# ComfyUI and the proxy are not running yet (the app starts them): their checks fail here, and that is expected
-"$APY" -m cinestudio doctor | tail -1 || echo "note: doctor reports what is not running yet (ComfyUI, the proxy):" \
-  "normal before the app starts; check its other lines (Blender, models, ffmpeg)"
+# Only absent services are expected here; Blender, ffmpeg and completed model downloads must pass.
+DOCTOR_ARGS=()
+if [ "$SKIP_MODELS" = "1" ]; then DOCTOR_ARGS+=(--skip-models); fi
+"$APY" "$REPO/setup/check_linux.py" doctor "${DOCTOR_ARGS[@]}"
 
 cat <<EOF
 
 Done. Start the app on the pod inside tmux (it keeps running when the SSH session ends):
   tmux new -s cinestudio
   source $ROOT/env.sh && cd $REPO && .venv/bin/python -m cinestudio app
-From your PC, open a tunnel and the page (the local port must be 8765: the app accepts only that host):
+From your PC, open a tunnel and the page (the local port must match the app's configured port):
   ssh -L 8765:127.0.0.1:8765 <the pod's SSH address>      then open http://127.0.0.1:8765
 Agents that use only the CLI (no app): start the proxy first: .venv/bin/python -m cinestudio proxy start
 EOF
