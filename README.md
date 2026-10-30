@@ -1,5 +1,7 @@
 # cinestudio
 
+<img src="cinestudio/web/icon-192.png" alt="cinestudio CS logo" width="96">
+
 **Direct a scene in Blender. Bring it to life with your own characters and open-weight AI models.**
 
 cinestudio turns a Blender shot—its camera, motion and mannequin layout—into an AI-generated video. Reuse the same shot with different characters, backgrounds and styles, or create a new template to direct another scene.
