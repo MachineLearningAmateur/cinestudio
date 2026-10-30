@@ -635,6 +635,10 @@ def _parser() -> JsonArgumentParser:
     qc = qp.add_parser("cancel", help="cancel one queued or running request (explicit; nothing else stops work)")
     qc.add_argument("kind", choices=["character", "video", "song", "lab", "template"])
     qc.add_argument("ref", help="the job id (character), run id (video) or song name (song)")
+    qr = qp.add_parser("release-hold", help="release an unresolved queue hold after checking that no work is active")
+    qr.add_argument("kind", choices=["song"])
+    qr.add_argument("ref", help="the song name shown by queue list")
+    qr.add_argument("--confirm", action="store_true", help="confirm you checked the unresolved job and the proxy's full queue")
     wfp = sub.add_parser("workflow", help="the user's copies of the built-in ComfyUI graphs (the Workflows view)"
                          ).add_subparsers(dest="action", required=True, parser_class=JsonArgumentParser)
     x = wfp.add_parser("list", help="a built-in graph's copies and which graph new jobs use")
@@ -1583,6 +1587,8 @@ def _dispatch(a) -> int:
         from . import workqueue
         if a.action == "list":
             emit({"ok": True, **workqueue.view()})
+        elif a.action == "release-hold":
+            emit({"ok": True, **workqueue.release_hold(a.kind, a.ref, confirm=a.confirm)})
         else:
             emit({"ok": True, **workqueue.cancel(a.kind, a.ref)})
         return 0

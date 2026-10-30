@@ -185,29 +185,33 @@ async function loadMeters() {
 async function loadQueue() {
   try { state.queue = await api("/api/queue"); } catch { return; }
   const n = state.queue.items.length, badge = $("#queue-count");
+  const holds = state.queue.holds || [];
   const run = state.queue.items.find((x) => x.status === "running") || state.queue.items[0];
   const waiting = n - (run ? 1 : 0);
   badge.textContent = `+${waiting}`; badge.classList.toggle("hidden", waiting < 1);
-  $("#queue-text").textContent = !run ? "Idle"
+  $("#queue-text").textContent = holds.length ? "Queue waiting for an unconfirmed job"
+    : !run ? "Idle"
     : run.status === "running" ? `${run.label} · ${Math.round((run.frac || 0) * 100)}%` : `${run.label} · starting`;
-  $("#btn-queue").classList.toggle("busy", !!run);
-  $("#btn-queue").title = n ? `Queue: ${n} (click to see all)` : "Queue: empty";
+  $("#btn-queue").classList.toggle("busy", !!run || !!holds.length);
+  $("#btn-queue").title = holds.length ? "Queue waiting for an unconfirmed job (click for details)" : n ? `Queue: ${n} (click to see all)` : "Queue: empty";
   if (!$("#queue-pop").classList.contains("hidden")) renderQueue();
 }
 function renderQueue() {
   const q = state.queue, pop = $("#queue-pop");
+  const holds = q.holds || [];
   const others = q.other_comfy_jobs ? `<span class="muted" title="ComfyUI jobs of other programs">+${q.other_comfy_jobs} other</span>` : "";
-  pop.innerHTML = `<div class="qhead">Queue${others}</div>` + (q.items.length ? q.items.map((it) => {
+  const notice = holds.map((h) => `<div class="qempty">Waiting for the outcome of ${esc(h.kind)} ${esc(h.ref)}. The queue will continue when the job is confirmed finished. If it cannot be found, check ComfyUI and the proxy, then use <code>cinestudio queue release-hold ${esc(h.kind)} ${esc(h.ref)} --confirm</code>.</div>`).join("");
+  pop.innerHTML = `<div class="qhead">Queue${others}</div>` + notice + (q.items.length ? q.items.map((it) => {
     const running = it.status === "running";
     const since = it.step_started || it.started;
-    const line = running ? `${it.text ? `<span>${esc(it.text)}</span>` : ""}${progressBar(it.frac || 0, since ? q.now - since : 0)}`
-      : `<span>${it.position === 0 ? "starting" : it.position === 1 ? "next" : `#${it.position} in line`}</span>`;
+    const line = running ? `${it.text ? `<span>${esc(it.text)}</span>` : ""}${progressBar(it.frac || 0, since ? q.now - since : 0)}${it.no_recent_progress ? '<span title="Some model steps are quiet for a long time">No recent progress update; work may still be running.</span>' : ""}`
+      : `<span>${holds.length && it.position === 0 ? "waiting for the unconfirmed job" : it.position === 0 ? "starting" : it.position === 1 ? "next" : `#${it.position} in line`}</span>`;
     return `<div class="qitem ${running ? "running" : ""}" data-kind="${it.kind}" data-ref="${esc(it.ref)}">
       <span class="qicon">${it.kind === "video" ? ICON.film : it.kind === "song" ? ICON.music : it.kind === "template" ? ICON.cube : it.kind === "lab" && String(it.ref).startsWith("bg-") ? ICON.image : ICON.person}</span>
       <span class="qlabel" title="${esc(it.label)}">${esc(it.label)}</span>
       <button class="qstop" title="${running ? "Stop" : "Remove from the queue"}" aria-label="Stop">${ICON.stop}</button>
       <div class="qline">${line}</div></div>`;
-  }).join("") : `<div class="qempty">Nothing in the queue</div>`);
+  }).join("") : holds.length ? "" : `<div class="qempty">Nothing in the queue</div>`);
   $$(".qitem", pop).forEach((row) => {
     const it = q.items.find((x) => x.kind === row.dataset.kind && x.ref === row.dataset.ref);
     row.addEventListener("click", () => {

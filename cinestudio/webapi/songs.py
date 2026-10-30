@@ -64,7 +64,7 @@ def _song_new(f: dict, wait: float = 20) -> dict:
     log = song.songs_dir() / f"{name}.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     started = time.time()
-    workqueue.add("song", name, f"{name} · song")         # the queue place in REQUEST order; the worker claims it
+    workqueue.add_new("song", name, f"{name} · song")     # only this request owns its reservation
     try:
         pid, independent = spawn.detached(cmd, log, cli.ROOT)
     except BaseException:

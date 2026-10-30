@@ -18,6 +18,7 @@ into 32 GB of RAM and crash (2026-10-18).
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable
@@ -135,7 +136,13 @@ class SdkBackend:
                 on_event("progress", {"value": ev.value, "step": ev.step, "steps": ev.steps, "node": ev.current_node})
             elif name == "StatusChange":
                 on_event("status", {"status": ev.status, "queue_position": ev.queue_position})
-        return self.state(job_id)
+        # The SDK legitimately ends events() immediately when the server has no SSE support (501).
+        # That does not mean the job ended: use the authoritative status endpoint until it does.
+        while True:
+            state = self.state(job_id)
+            if state.done:
+                return state
+            time.sleep(2)
 
     def download(self, job_id: str, node_id: str, dst: str | Path) -> Path:
         outs = self.client.jobs.get(job_id).get_outputs(node_id)

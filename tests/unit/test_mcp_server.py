@@ -14,6 +14,7 @@ CLI_TO_MCP = {
     "models stop": ["stop_model_download"],
     "comfy status": ["engine_status"],
     "queue list": ["queue_list"], "queue cancel": ["cancel_queued", "cancel_job", "cancel_run"],
+    "queue release-hold": ["release_queue_hold"],
     "background list": ["list_backgrounds", "show_background"], "background new": ["new_panorama"],
     "background plate": ["new_backplate"], "background from-set": ["backplate_from_set"],
     "background import": ["import_background"], "background depth": ["panorama_depth"],

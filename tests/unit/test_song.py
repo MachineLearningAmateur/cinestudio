@@ -248,8 +248,39 @@ def test_a_lost_watch_drains_before_the_gpu_lock_is_released(fake, monkeypatch):
     with pytest.raises(song.SongUnresolved):
         song.make("lost2", "funk", seconds=16, backend_factory=LostWatch)
     assert song.load("lost2")["status"] == "unresolved"
+    assert [(h["kind"], h["ref"], h["job"]) for h in workqueue.holds()] == [("song", "lost2", "p1")]
     with pytest.raises(song.SongError, match="exists"):                 # an unresolved job is not replaced silently
         song.make("lost2", "funk", seconds=16, backend_factory=lambda: fake["backend"])
+
+
+def test_song_cancel_retries_transient_error(fake, monkeypatch, tmp_path):
+    import threading
+    done = threading.Event()
+    calls = []
+
+    class FlakyCancel:
+        def watch(self, jid, on_event):
+            assert done.wait(2)
+            return JobState(jid, "canceled")
+
+        def cancel(self, jid):
+            calls.append(jid)
+            if len(calls) == 1:
+                raise ConnectionError("temporary failure")
+            done.set()
+
+    monkeypatch.setattr(song, "CANCEL_POLL_SECONDS", 0.01)
+    with pytest.raises(workqueue.QueueCanceled):
+        song._watch(FlakyCancel(), "p1", object(), tmp_path, {"name": "x"}, lambda: True, lambda e: None)
+    assert calls == ["p1", "p1"]
+
+
+def test_song_duplicate_reservation_does_not_remove_existing_ticket(fake, monkeypatch):
+    from cinestudio.webapi.songs import _song_new
+    workqueue.add("song", "duplicate", "existing")
+    with pytest.raises(workqueue.QueueBusy):
+        _song_new({"name": "duplicate", "tags": "instrumental"})
+    assert workqueue.find("song", "duplicate") is not None
 
 
 def test_drain_needs_evidence_from_an_answering_comfyui(monkeypatch, tmp_path):

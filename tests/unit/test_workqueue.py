@@ -183,3 +183,83 @@ def test_run_progress_counts_from_the_take_start(tmp_path, monkeypatch):
     (tmp_path / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in ev))
     p = workqueue._run_progress("r1")
     assert p["step_started"] == 9000.0 and p["frac"] == 0.5 and p["text"] == "take3_2"
+    assert p["progress_at"] == 9100.0
+
+
+def test_unresolved_hold_survives_ticket_cleanup_and_blocks_admission(home, monkeypatch):
+    import threading
+    workqueue.hold("song", "ambiguous", prefix="cinestudio/ambiguous", job="p1")
+    workqueue.add("character", "next")
+    stopped = threading.Event()
+    seen = []
+    monkeypatch.setattr(workqueue, "resolve_holds", lambda: None)
+    monkeypatch.setattr(workqueue.time, "sleep", lambda _: stopped.wait(0.01))
+
+    def wait():
+        try:
+            workqueue.wait_turn("character", "next", on_wait=seen.append, should_stop=stopped.is_set, poll=0.01)
+        except workqueue.QueueCanceled:
+            pass
+    thread = threading.Thread(target=wait)
+    thread.start()
+    try:
+        assert stopped.wait(0.05) is False
+        assert thread.is_alive() and seen == [1]
+        assert workqueue.holds()[0]["job"] == "p1"
+    finally:
+        stopped.set()
+        thread.join(2)
+    assert not thread.is_alive()
+
+
+def test_hold_is_removed_only_after_exact_job_is_terminal(home, monkeypatch):
+    from cinestudio import server
+    from cinestudio import backend
+    workqueue.hold("song", "uncertain", prefix="cinestudio/uncertain", job="p1")
+    monkeypatch.setattr(server, "prompt_status", lambda *_: "queued")
+    monkeypatch.setattr(backend, "SdkBackend", lambda: type("B", (), {"state": lambda self, _: backend.JobState("p1", "running")})())
+    workqueue.resolve_holds()
+    assert workqueue.holds()
+    # A stale proxy terminal state must not override ComfyUI reporting the job still queued.
+    monkeypatch.setattr(backend, "SdkBackend", lambda: type("B", (), {"state": lambda self, _: backend.JobState("p1", "succeeded")})())
+    workqueue.resolve_holds()
+    assert workqueue.holds()
+    monkeypatch.setattr(server, "prompt_status", lambda *_: "done_ok")
+    workqueue.resolve_holds()
+    assert workqueue.holds() == []
+
+
+def test_unresolved_hold_can_be_released_only_after_checked_empty_services(home, monkeypatch):
+    from types import SimpleNamespace
+    from cinestudio import server, backend
+    workqueue.hold("song", "uncertain", prefix="cinestudio/uncertain", job=None)
+    with pytest.raises(ValueError, match="confirm"):
+        workqueue.release_hold("song", "uncertain")
+    monkeypatch.setattr(server, "alive", lambda: True)
+    monkeypatch.setattr(server, "queue_items", lambda _: [("active", {})])
+    with pytest.raises(ValueError, match="empty queue"):
+        workqueue.release_hold("song", "uncertain", confirm=True)
+    monkeypatch.setattr(server, "queue_items", lambda _: [])
+    monkeypatch.setattr(backend, "SdkBackend", lambda: SimpleNamespace(client=SimpleNamespace(list_jobs=lambda **_: [])))
+    assert workqueue.release_hold("song", "uncertain", confirm=True)["released"]
+    assert workqueue.holds() == []
+
+
+def test_unconfirmed_submission_can_be_found_and_resolved_later(home, monkeypatch):
+    from cinestudio import server
+    workqueue.hold("song", "uncertain", prefix="cinestudio/uncertain", job=None)
+    monkeypatch.setattr(server, "find_prompt", lambda prefix, url: "p1")
+    monkeypatch.setattr(server, "prompt_status", lambda url, jid: "done_ok")
+    workqueue.resolve_holds()
+    assert workqueue.holds() == []
+
+
+def test_old_progress_is_an_informational_notice_not_a_cancel(home, monkeypatch):
+    from cinestudio import lab, server
+    monkeypatch.setattr(workqueue, "tickets", lambda: [{"kind": "lab", "ref": "slow", "added": 1}])
+    monkeypatch.setattr(lab, "started", lambda _: workqueue.time.time() - 700)
+    monkeypatch.setattr(lab, "progress", lambda _: 0.5)
+    monkeypatch.setattr(server, "queue_items", lambda _: [])
+    item = workqueue.view()["items"][0]
+    assert item["status"] == "running" and item["no_recent_progress"] is True
+    assert not lab.canceled("slow")

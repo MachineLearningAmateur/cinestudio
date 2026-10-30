@@ -94,6 +94,7 @@ def request_cancel(name: str) -> dict:
 # ---------------------------------------------------------------- the GPU job
 MIN_SECONDS = 4.0
 DRAIN_SECONDS = 3600.0          # how long a worker waits for an unconfirmed job before it calls it "unresolved"
+CANCEL_POLL_SECONDS = 2.0
 REPLACEABLE = ("failed", "canceled")
 
 
@@ -198,6 +199,7 @@ def _make_locked(d: Path, name: str, tags: str, lyrics: str, bpm: int, seconds: 
                 # that it ended (or that it never existed); otherwise the next job could start next to it
                 pending = jid or (exc.key if isinstance(exc, UnresolvedSubmission) else None)
                 if _drain(prefix, jid, backend) != "ended":
+                    workqueue.hold("song", name, prefix=prefix, job=jid)
                     raise SongUnresolved(f"song {name}: the ComfyUI job ({pending or prefix}) could not be confirmed "
                                          f"as ended after {DRAIN_SECONDS:.0f} s ({exc}); check ComfyUI's queue before "
                                          "starting more GPU work") from exc
@@ -234,12 +236,12 @@ def _watch(backend: Any, jid: str, wf: Any, d: Path, rec: dict, canceled: Callab
     stop = threading.Event()
 
     def watcher() -> None:
-        while not stop.wait(2.0):
+        while not stop.wait(CANCEL_POLL_SECONDS):
             if canceled():
                 try:
                     backend.cancel(jid)                        # job-scoped, once
                 except Exception:  # noqa: BLE001 - the watch below sees the outcome either way
-                    pass
+                    continue                                  # transient failure: retry until the watch ends
                 return
     t = threading.Thread(target=watcher, name=f"song-cancel-{jid}", daemon=True)
     t.start()

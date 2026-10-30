@@ -15,7 +15,7 @@ reports with sources are in docs/ (named below where they matter). A full copy o
 Three interfaces, the same functions:
 - **JSON CLI:** `python -m cinestudio <command> ...` (`--help` on every command and subcommand).
 - **Web app:** `python -m cinestudio app` (the user's window; `--open` only on the first start).
-- **MCP server:** `python -m cinestudio mcp` (stdio; 99 tools; this file is the resource `cinestudio://agents`;
+- **MCP server:** `python -m cinestudio mcp` (stdio; 100 tools; this file is the resource `cinestudio://agents`;
   guide below).
 
 **The CLI contract:** every command prints JSON lines: zero or more event lines (with an `"event"` key), then ONE result
@@ -47,7 +47,7 @@ python -m cinestudio queue list                                # what runs, what
 - **Tools** (the same functions as the CLI; tests/unit/test_mcp_server.py fails when a CLI command has no tool and no
   reason in its CLI-only list):
   - setup: `doctor`, `settings_status`, `models_status`, `download_models`, `stop_model_download`, `engine_status`, `list_loras`;
-  - queue: `queue_list`, `cancel_queued`, `cancel_job`, `cancel_run`;
+  - queue: `queue_list`, `cancel_queued`, `cancel_job`, `cancel_run`, `release_queue_hold`;
   - styles: `list_styles`, `show_style`, `new_style`, `edit_style`, `delete_style`, `set_default_style`, `set_character_style`,
     `make_style_reference`, `use_style_reference`;
   - characters: `create_character`, `import_character`, `pick_candidate`, `edit_image`, `undo_edit`, `make_views`,
@@ -79,6 +79,12 @@ python -m cinestudio queue list                                # what runs, what
   are never set or shown through MCP (the user sets them in the app or with `settings token set`); engine start/stop,
   tier/backend changes and the Windows GPU settings stay in the CLI. A refusal comes back as a tool error with its
   reason (the same text as the CLI's `error`).
+- **Unconfirmed GPU work:** a song whose outcome cannot be confirmed leaves a durable queue hold; new jobs wait until
+  its exact job is confirmed finished. `queue list` shows the hold. If it cannot be found, check ComfyUI and the proxy;
+  only at the user's explicit request use `queue release-hold song NAME --confirm` (MCP: `release_queue_hold` with
+  `confirm=true`). Check the proxy's full queue: both services must be reachable with no observed active jobs; the
+  song record is kept. A “no recent
+  progress” notice is informational: long model steps can be quiet, so do not stop them on that notice alone.
 
 ### Repository layout (where things live; keep this list current when you add a folder or a main module)
 

@@ -184,6 +184,15 @@ def queue_list() -> dict:
 
 
 @_tool(DESTRUCTIVE)
+def release_queue_hold(kind: str, ref: str, confirm: bool = False) -> dict:
+    """Release an unresolved queue hold only when the user explicitly asks and confirms the job was checked.
+    The user must check the full proxy queue; ComfyUI and the proxy must be reachable with no observed active jobs.
+    The song record is kept."""
+    _check_cli(("queue", "release-hold"), kind=kind)
+    return _ok(**workqueue.release_hold(kind, ref, confirm=confirm))
+
+
+@_tool(DESTRUCTIVE)
 def cancel_queued(kind: str, ref: str) -> dict:
     """Cancel one queued or running request of the shared queue (kind character|video|song|lab|template; ref = the job
     id, run id, song name, background ref "bg-..." or template name, as queue_list shows). ONLY when the user asked

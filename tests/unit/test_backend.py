@@ -79,3 +79,11 @@ def test_explicit_base_url_wins(monkeypatch):
 def test_terminal_states(status, done, ok):
     s = b.JobState("j", status)
     assert (s.done, s.ok) == (done, ok)
+
+
+def test_watch_polls_if_event_stream_is_unavailable(monkeypatch):
+    states = iter([b.JobState("j", "running"), b.JobState("j", "succeeded")])
+    be = backend(SimpleNamespace(jobs=SimpleNamespace(get=lambda _: SimpleNamespace(events=lambda: iter(())))))
+    monkeypatch.setattr(be, "state", lambda _: next(states))
+    monkeypatch.setattr(b.time, "sleep", lambda _: None)
+    assert be.watch("j", lambda *_: None).status == "succeeded"

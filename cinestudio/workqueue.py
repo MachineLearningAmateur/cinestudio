@@ -27,6 +27,7 @@ from typing import Callable
 from .locks import FileLock, LockBusy, pid_alive, process_ctime
 
 START_GRACE = 90.0
+PROGRESS_NOTICE_SECONDS = 600.0
 KINDS = ("character", "video", "song", "lab", "template")
 
 
@@ -46,6 +47,7 @@ def _qlock() -> FileLock:
 
 
 def _write(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + f".{secrets.token_hex(3)}.tmp")
     tmp.write_text(json.dumps(data), encoding="utf-8")
     tmp.replace(path)
@@ -161,6 +163,82 @@ def tickets() -> list[dict]:
         return _live_tickets(clean=True)
 
 
+def hold(kind: str, ref: str, *, prefix: str, job: str | None) -> None:
+    """Persist an uncertain submission across worker and app restarts, before releasing its GPU lock."""
+    if kind not in KINDS or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", ref):
+        raise ValueError("invalid queue hold")
+    with _qlock():
+        _write(qdir() / "holds" / f"{kind}-{ref}.json", {
+            "kind": kind, "ref": ref, "prefix": prefix, "job": job, "created": time.time()})
+
+
+def holds() -> list[dict]:
+    """Unconfirmed submissions which prevent admission of more GPU work."""
+    return [h for p in sorted((qdir() / "holds").glob("*.json")) if (h := _read(p)) is not None]
+
+
+def resolve_holds() -> None:
+    """Remove a hold only when the exact job is confirmed terminal by ComfyUI or the proxy."""
+    from . import server
+    from .backend import SdkBackend
+    for h in holds():
+        jid = h.get("job")
+        if not jid:
+            # An ambiguous submit may become discoverable later; absence alone is not proof it ended.
+            try:
+                jid = server.find_prompt(h["prefix"], server.comfyui_url())
+            except Exception:  # noqa: BLE001
+                pass
+            if not jid:
+                try:
+                    jid = SdkBackend().find(h["prefix"])
+                except Exception:  # noqa: BLE001
+                    pass
+            if not jid:
+                continue
+        ended = False
+        running = False
+        try:
+            url = server.comfyui_url()
+            status = server.prompt_status(url, jid)
+            ended = status in ("done_ok", "done_error")
+            running = status == "queued"
+        except Exception:  # noqa: BLE001 - an unreachable server is not evidence of completion
+            pass
+        if not ended and not running:
+            try:
+                ended = SdkBackend().state(jid).done
+            except Exception:  # noqa: BLE001 - retain the hold until the result can be verified
+                pass
+        if ended:
+            with _qlock():
+                p = qdir() / "holds" / f"{h['kind']}-{h['ref']}.json"
+                current = _read(p)
+                if current and current.get("job") == h.get("job") and current.get("prefix") == h.get("prefix"):
+                    p.unlink(missing_ok=True)
+
+
+def release_hold(kind: str, ref: str, *, confirm: bool = False) -> dict:
+    """Explicitly release an unresolvable hold only after both services show no active work."""
+    if not confirm:
+        raise ValueError("confirm that you checked the unresolved job before releasing the queue")
+    if kind not in KINDS or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", ref):
+        raise ValueError("invalid queue hold")
+    from . import server
+    from .backend import SdkBackend, TERMINAL
+    if not server.alive() or server.queue_items(server.comfyui_url()):
+        raise ValueError("ComfyUI must be reachable with an empty queue before releasing a hold")
+    summaries = list(SdkBackend().client.list_jobs(limit=100))
+    if any(str(getattr(j, "status", "")).lower() not in TERMINAL for j in summaries):
+        raise ValueError("the proxy has active or unrecognized jobs; the hold was kept")
+    with _qlock():
+        path = qdir() / "holds" / f"{kind}-{ref}.json"
+        if _read(path) is None:
+            raise ValueError(f"no queue hold for {kind} {ref}")
+        path.unlink()
+    return {"released": True, "kind": kind, "ref": ref}
+
+
 def ahead_of(kind: str, ref: str) -> list[dict]:
     with _qlock():
         me = find(kind, ref)
@@ -187,7 +265,16 @@ def wait_turn(kind: str, ref: str, label: str = "", on_wait: Callable[[int], Non
             time.sleep(poll)                           # 30 s and two waiting runs died): a waiter only tries again
             continue
         if n == 0:
-            return
+            if holds():
+                resolve_holds()
+            if not holds():
+                return
+            # Do not hold the queue lock while contacting services or waiting for a resolution.
+            if on_wait and last != -1:
+                on_wait(1)  # the unresolved submission is ahead of this ticket
+            last = -1
+            time.sleep(max(poll, 5.0))
+            continue
         if n != last and on_wait:
             on_wait(n)
         last = n
@@ -229,7 +316,8 @@ def _run_progress(run_id: str) -> dict | None:
             break
     if prog is None:
         return {"frac": 0, "text": note or step, "step_started": started} if started else None
-    return {"frac": (prog.get("value") or 0) / (prog.get("max") or 1), "text": prog.get("step"), "step_started": started}
+    return {"frac": (prog.get("value") or 0) / (prog.get("max") or 1), "text": prog.get("step"),
+            "step_started": started, "progress_at": prog.get("t")}
 
 
 def view() -> dict:
@@ -248,6 +336,7 @@ def view() -> dict:
                 item.update(status=j["status"], character=j.get("character"), prop=j.get("prop"), action=j.get("action"),
                             started=j.get("started"), frac=frac,
                             text=f"{p['item']} of {p['items']}" if p.get("items", 1) > 1 else None)
+                item["progress_at"] = p.get("t")
             elif kind == "template" and ref.startswith("mask-"):   # a figure selection (cinestudio/figure_mask.py)
                 from . import figure_mask
                 r = figure_mask.status(ref[len("mask-"):])
@@ -265,22 +354,32 @@ def view() -> dict:
                             started=(lab.started(ref) or t.get("added")) if i == 0 else t.get("added"),
                             frac=lab.progress(ref) if i == 0 else 0,
                             text="stopping after this step" if stop else None, stopping=stop or None)
+                try:
+                    item["progress_at"] = (lab.lab_dir() / f"{ref}.progress.json").stat().st_mtime
+                except OSError:
+                    pass
             elif kind == "song":
                 from . import song
                 s = song.load(ref)
                 p = s.get("progress") or {}
                 item.update(status=s.get("status"), started=s.get("started"),
                             frac=(p.get("value") or 0) / (p.get("max") or 1) if p else 0, text=None)
+                if p:
+                    item["progress_at"] = (song.song_dir(ref) / "song.json").stat().st_mtime
             else:
                 st = runner.status(ref)
                 prog = _run_progress(ref) if st["status"] == "running" else None
                 item.update(status=st["status"], started=(st.get("worker") or {}).get("started"),
                             frac=prog["frac"] if prog else 0, text=prog["text"] if prog else None,
-                            step_started=prog["step_started"] if prog else None)
+                            step_started=prog["step_started"] if prog else None,
+                            progress_at=prog.get("progress_at") if prog else None)
                 if st["status"] == "running" and st.get("cancel_requested"):
                     item.update(text="stopping after this step", stopping=True)
         except Exception as exc:  # noqa: BLE001 - one unreadable record must not hide the queue
             item.update(status="unknown", error=str(exc))
+        last = item.get("progress_at") or item.get("step_started") or item.get("started")
+        if item.get("status") == "running" and last and time.time() - last >= PROGRESS_NOTICE_SECONDS:
+            item["no_recent_progress"] = True
         items.append(item)
     others = None
     try:
@@ -288,7 +387,7 @@ def view() -> dict:
         others = sum(1 for pid, _ in server.queue_items(server.comfyui_url()) if pid not in owned)
     except Exception:  # noqa: BLE001 - ComfyUI down: no count
         pass
-    return {"items": items, "other_comfy_jobs": others, "now": time.time()}
+    return {"items": items, "other_comfy_jobs": others, "holds": holds(), "now": time.time()}
 
 
 def cancel(kind: str, ref: str) -> dict:
