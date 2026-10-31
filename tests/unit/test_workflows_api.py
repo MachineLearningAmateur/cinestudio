@@ -123,7 +123,8 @@ def test_the_workflow_list_groups_the_graphs_by_feature(home):
         assert rows["ltx25_layouting"]["group"] == "Videos" and rows["ltx25_layouting"]["nodes"] > 10
         assert rows["qwenedit_edit"]["model_family"] == "qwen_edit"
         assert any("Look images" in f for f in rows["qwenedit_edit"]["features"])
-        assert rows["ltx25dev_v2vref"]["group"] == "Videos"                 # video-to-video: a live feature
+        assert rows["ltx25_v2vref"]["group"] == "Videos"                    # distilled video-to-video
+        assert not [n for n in rows if n.startswith("ltx25dev_")]       # retired full-model graphs
         assert not [n for n in rows if n.startswith("ltx23")]             # the retired LTX-2.3 graphs are gone
         assert not [r["name"] for r in d["items"] if r["group"] == d["groups"][-1]]   # every graph serves a feature
         one = (await (await c.get("/api/workflows/qwenedit_angle")).json())["data"]

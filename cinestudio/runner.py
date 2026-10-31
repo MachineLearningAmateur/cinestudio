@@ -48,7 +48,7 @@ ROOT = Path(__file__).resolve().parent.parent
 from . import recipe as _recipe
 from . import model_pairs as _pairs
 from .model_pairs import graph_feature
-PROFILE = _recipe.LTX_PROFILE      # video-to-video: LTX-2.5 full (dev); old runs keep their own
+PROFILE = _recipe.LTX_PROFILE      # all new video jobs use distilled LTX-2.5; old runs keep their own metadata
 MAX_CLIP_FRAMES = 121            # one LTX clip; a longer shot is made of more clips that share one frame
 CONTROL_KIND = "pose_env"
 MAX_CONTROL_BYTES = 2 ** 31
@@ -238,9 +238,7 @@ DEFAULTS = {"quality": "preview", "seed": 333, "ingredients_strength": 1.0, "con
             "source_schedule": "lq",    # distilled v2v stage 1: "lq" = a linear-quadratic tail (our 2.3 tuning);
             #                             "grid" = the start noise, then Lightricks' distilled grid below it
             "guidance": None,           # full model: the video CFG of the guider (None = the graph's 3.0)
-            "video_model": None,        # "distilled" (layout default: LTX-2.5 distilled, 8 steps, CFG 1) or "full" (the
-            #                             dev model: 30 steps, MultimodalGuider CFG 3; slower, NOT yet A/B-tested
-            #                             against distilled); video-to-video runs use the full model. Recorded resolved.
+            "video_model": None,        # distilled (LTX-2.5, 8 steps, CFG 1); full remains in old run records only
             "background": None,         # Blender shots: None = the template's own set; "text" = a 360 panorama made from
             #                             background_text (or the video text); "saved:NAME" = a panorama from the library
             "background_text": None,    # the place for the panorama (default: the video text)
@@ -658,7 +656,7 @@ _pairs.register("tier graph settings", "_freeze_tier", graphless=True,
 # the flat 200 m ground laid the roof's low walls and the tank bases flat; the dome stands them up)
 PANO_GROUND = "dome"
 LAYOUT_PROFILE = "ltx25"        # layout runs: LTX-2.5 DISTILLED (the IC-LoRAs are trained for it; ~5 min per final clip)
-VIDEO_MODELS = _pairs.VIDEO_MODELS   # the run option "video model": distilled (LAYOUT_PROFILE) or full (ltx25dev)
+VIDEO_MODELS = _pairs.SUPPORTED_VIDEO_MODELS  # new runs use LTX-2.5 distilled only
 PANO_ARGS = ("--ground", PANO_GROUND, "--wall-top", "30")
 PANO_DEPTH_ARGS = ("--ground", "depth", "--depth-cols", "512", "--edge-ratio", "1.35")
 BACKGROUND_GROUNDS = ("dome", "depth")
@@ -710,34 +708,6 @@ class RunError(RuntimeError):
     pass
 
 
-STAGE2_LORA_SLOT = "ltx25_distilled_lora"   # setup/models.json: the full model's stage-2 LoRA (feature full_stage2)
-
-
-def full_model_missing(tier: str | None, quality: str = "final") -> str | None:
-    """Why the FULL (dev) video model cannot run with `tier` (a file is not downloaded), or None. The dev transformer is
-    the slot ltx25_model of setup/models.json, in the "video" feature of every tier; a FINAL run also needs the
-    distilled LoRA of its stage 2 (slot ltx25_distilled_lora: feature video of the large tier, the optional feature
-    full_stage2 of the 8gb tier). A preview runs stage 1 only (ComfyUI never loads the stage-2 LoRA)."""
-    from . import models
-    tier = models.canon(tier) or "8gb"
-    slots = [(_pairs.FULL_MODEL_SLOT, "the full video model", "video")]
-    if quality != "preview":
-        feat = "full_stage2" if "full_stage2" in models.optional_features(tier) else "video"
-        slots.append((STAGE2_LORA_SLOT, "the full video model's stage-2 LoRA (final quality)", feat))
-    for slot, what, feat in slots:
-        try:
-            e = models.bundle(tier)[slot]
-            p = models.path_of(e)
-        except (models.ModelsError, KeyError) as exc:
-            return f"{what} cannot be found: {exc}"
-        if p.is_file() and p.stat().st_size == e["size"]:
-            continue
-        return (f"{what} ({e['file']}, {e['size'] / 1e9:.1f} GB) is not downloaded; get it with "
-                f"`python -m cinestudio models download --tier {tier} --feature {feat}` (Settings > Quick setup), or "
-                "use the distilled model" + (" or quality preview" if slot == STAGE2_LORA_SLOT else ""))
-    return None
-
-
 def stage2_recipe(workflows_dir: Path, profile: str | None, quality: str | None) -> dict | None:
     """Which stage 2 (the x2 upscale refine) a layout run's FROZEN graphs make: "distilled" (the distilled transformer,
     CFG 1), "distilled-lora" (the full model: the dev transformer + Lightricks' distilled LoRA, CFG 1, the distilled
@@ -767,7 +737,8 @@ def stage2_recipe(workflows_dir: Path, profile: str | None, quality: str | None)
 def retired(m: dict) -> str | None:
     """Why a run cannot run any more (its graphs were retired), or None. Old runs stay listed and their videos play."""
     if m.get("profile") in _recipe.RETIRED_PROFILES:
-        return (f"this run used the retired LTX-2.3 graphs ({m['profile']}): it can be watched, but not resumed, "
+        reason = "LTX-2.3 graphs" if m["profile"].startswith("ltx23") else "LTX-2.5 full model"
+        return (f"this run used the retired {reason} ({m['profile']}): it can be watched, but not resumed, "
                 "retaken or forked; make a new run")
     return None
 
@@ -1137,13 +1108,15 @@ def new_run(blend: str | Path | None, sheet: str | Path, character: str, video_t
         opts["render_mode"] = "layout" if (not template and opts.get("character_name")) else "v2v"
     if opts["render_mode"] == "layout" and options.get("overlap_strength") is None:
         opts["overlap_strength"] = LAYOUT_OVERLAP_STRENGTH
-    if opts.get("video_model") is not None:              # the quality option: distilled (fast) or full (dev)
-        if opts["video_model"] not in _pairs.VIDEO_MODELS:
-            raise RunError(f"video model must be one of {list(_pairs.VIDEO_MODELS)}")
-        want = _pairs.VIDEO_MODELS[opts["video_model"]]
+    if opts.get("video_model") is not None:              # only distilled is supported for new work
+        if opts["video_model"] not in VIDEO_MODELS:
+            raise RunError(f"video model must be one of {list(VIDEO_MODELS)}")
+        want = VIDEO_MODELS[opts["video_model"]]
         if profile is not None and profile != want:
             raise RunError(f"--video-model {opts['video_model']} means the profile {want}, not {profile}: give one")
         profile = want
+    if profile and profile != LAYOUT_PROFILE:
+        raise RunError("Only the LTX-2.5 distilled video profile (ltx25) is supported for new runs")
     if opts["render_mode"] == "layout" and profile is None:
         profile = LAYOUT_PROFILE                         # Lightricks' recipe and our tests: the distilled model
     if opts.get("render_mode") not in ("v2v", "layout"):
@@ -1315,10 +1288,6 @@ def new_run(blend: str | Path | None, sheet: str | Path, character: str, video_t
     if not (WORKFLOWS / f"{prof}_{VARIANTS[0]}_api.json").is_file():
         raise RunError(f"unknown graph profile {prof!r}")
     opts["video_model"] = _pairs.video_model_of(prof)
-    if opts["render_mode"] == "layout" and opts["video_model"] == "full":
-        why = full_model_missing(options_tier, opts.get("quality"))   # refuse now, not after the look image
-        if why:
-            raise RunError(why)
     run_id = time.strftime("r%Y%m%d-%H%M%S-") + secrets.token_hex(2)
     stage = runs_dir() / f".staging-{run_id}"
     (stage / "inputs" / "workflows").mkdir(parents=True)
@@ -1802,7 +1771,11 @@ def plan_figure_crops(mask: np.ndarray, n: int, xs: list | None = None) -> list[
 PASTE_GROW = 0.035             # the figure paste: the group's mask grown by this part of the box's longer side
 
 
-def figure_paste_alpha(mask: np.ndarray, box: tuple, columns: tuple) -> np.ndarray:
+PINNED_PASTE_GROW = 0.08       # a PINNED crop edit (2026-10-29) can change the figure + ~3% + a soft ring: paste all
+#                                of it (the 3.5% paste faded Kitsune's mask ears and both characters' feet)
+
+
+def figure_paste_alpha(mask: np.ndarray, box: tuple, columns: tuple, grow: float = PASTE_GROW) -> np.ndarray:
     """Where a crop's look edit is pasted back (0..1, the box's size): the figure mask of THIS group (its own columns
     only, not a neighbour's arm in the margin) grown by PASTE_GROW of the box and feathered, times a soft box edge.
     The rest of the box keeps the original frame: in trio_test (2026-10-25) Qwen redrew a crop's gym wall as a blue
@@ -1812,7 +1785,7 @@ def figure_paste_alpha(mask: np.ndarray, box: tuple, columns: tuple) -> np.ndarr
     m = np.zeros(mask.shape, np.uint8)
     m[:, a:b] = mask[:, a:b]
     m = m[y0:y1, x0:x1]
-    r = max(4, int(PASTE_GROW * max(x1 - x0, y1 - y0)))
+    r = max(4, int(grow * max(x1 - x0, y1 - y0)))
     grown = cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1)))
     soft = cv2.GaussianBlur(grown.astype(np.float32), (0, 0), max(1.0, r / 3))
     f = max(3, min(x1 - x0, y1 - y0) // 10)
@@ -1828,7 +1801,7 @@ def stitch_look(full: np.ndarray, mask: np.ndarray, plan: list, crops: list) -> 
     for c, img in zip(plan, crops):
         x0, y0, x1, y1 = c["box"]
         res = cv2.resize(img, (x1 - x0, y1 - y0), interpolation=cv2.INTER_AREA).astype(np.float32)
-        al = figure_paste_alpha(mask, c["box"], c.get("columns") or (x0, x1))[..., None]
+        al = figure_paste_alpha(mask, c["box"], c.get("columns") or (x0, x1), c.get("grow", PASTE_GROW))[..., None]
         part = out[y0:y1, x0:x1].astype(np.float32)
         out[y0:y1, x0:x1] = np.clip(part * (1 - al) + res * al, 0, 255).astype(np.uint8)
     return out
@@ -3851,6 +3824,13 @@ class Run:
             cv2.imwrite(str(src), cv2.resize(full[y0:y1, x0:x1], (round((x1 - x0) * k), round((y1 - y0) * k)),
                                              interpolation=cv2.INTER_CUBIC))
             slots = crop_plan["slots"]
+            if self.m.get("look_pin") and len(slots) == 1:   # one figure: a PINNED, GATED edit (2026-10-29)
+                outcome = self._pinned_crop(step, "look" if first else f"look_fig{slots[0] + 1}", gi, crop_plan,
+                                            full, m, src, res)
+                first = False
+                if outcome:
+                    return outcome
+                continue
             for j, slot in enumerate(slots):            # one edit per figure; a shared crop: in turn, on the last result
                 dst = res if j == len(slots) - 1 else self.work / f"look_g{gi + 1}_f{j + 1}.png"
                 if dst.is_file():
@@ -3863,6 +3843,10 @@ class Run:
                 if outcome:
                     return outcome
                 src = dst
+        if self.m.get("look_pin"):
+            for c in plan:
+                if len(c["slots"]) == 1:
+                    c["grow"] = PINNED_PASTE_GROW
         full = stitch_look(full, m, plan, [cv2.imread(str(self.work / f"look_g{gi + 1}_crop_out.png"))
                                            for gi in range(len(plan))])   # the figures only: the frame stays around
         if not cv2.imwrite(str(out), full):
@@ -3877,8 +3861,72 @@ class Run:
             step["look_fallback"] = "shared crop"
         return None
 
+    def _pinned_crop(self, step: dict, name: str, gi: int, crop_plan: dict, full: np.ndarray, mask: np.ndarray,
+                     src: Path, res: Path) -> str | None:
+        """One figure's crop of a several-character look, PINNED and GATED like the one-character look (2026-10-29,
+        user: "the look image shows the characters missing parts ... the head of kitsune is slightly faded out" /
+        "feet as well"): r20261029-205536-2dde's free crop edits redrew the whole crop, drew both characters larger
+        than their mannequins and standing (the layout: a hand on the hip, an arm out), and the 3.5% paste cut the
+        mask's ears and the feet. Now the crop's figure mask is a latent noise mask (look_pin.prepare: only the figure
+        + a margin can change), the result is cut back out of the padded edit size, and look_pin.check (the room, and
+        the POSE against the crop of the run's plate) makes it again with the next seed, at most MAX_TRIES times."""
+        from . import look_pin
+        x0, y0, x1, y1 = crop_plan["box"]
+        a, b = crop_plan.get("columns") or (x0, x1)
+        h, w = cv2.imread(str(src)).shape[:2]
+        own = np.zeros(mask.shape, np.uint8)
+        own[:, a:b] = mask[:, a:b]
+        mpng = self.work / "look_in" / f"g{gi + 1}_fig.png"      # not "_mask": look_pin.prepare writes that name
+        mpng.parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(mpng), cv2.resize(own[y0:y1, x0:x1] * 255, (w, h), interpolation=cv2.INTER_NEAREST))
+        plate = None
+        pl = cv2.imread(str(self.work / "plate.png"))
+        if pl is not None:
+            H, W = full.shape[:2]
+            plate = self.work / "look_in" / f"g{gi + 1}_plate.png"
+            cv2.imwrite(str(plate), cv2.resize(cv2.resize(pl, (W, H), interpolation=cv2.INTER_AREA)[y0:y1, x0:x1],
+                                               (w, h), interpolation=cv2.INTER_CUBIC))
+        prep = look_pin.prepare(src, mpng, self.work / "look_in", f"g{gi + 1}")
+        checks = step.setdefault("look_checks", {}).setdefault(name, [])
+        target = step if name == "look" else step.setdefault("parts", {}).setdefault(name, {})
+        while True:
+            seed = int(self.m["seed"]) + len(checks)
+            outcome = self._figure_look(step, name, src, crop_plan["slots"][0], res, seed=seed, pinned=prep)
+            if outcome:
+                return outcome
+            img = cv2.imread(str(res))
+            if img is not None:                              # the edit size is padded around the crop: cut it out
+                bx, by, bw, bh = prep["box"]
+                ew, eh = prep["size"]
+                if img.shape[1] != ew or img.shape[0] != eh:
+                    img = cv2.resize(img, (ew, eh), interpolation=cv2.INTER_AREA)
+                cv2.imwrite(str(res), cv2.resize(img[by:by + bh, bx:bx + bw], (w, h), interpolation=cv2.INTER_AREA))
+            try:
+                r = dict(look_pin.check(res, src, mpng, plate=plate), seed=seed)
+            except (ValueError, cv2.error, TypeError, AttributeError) as exc:
+                self.event("look_check_skipped", image=name, reason=f"{type(exc).__name__}: {exc}"[:200])
+                return None
+            keep = res.with_name(f"{res.stem}_try{len(checks) + 1}{res.suffix}")
+            shutil.copyfile(res, keep)
+            r["file"] = keep.name
+            checks.append(r)
+            self.event("look_check", image=name, **{k: v for k, v in r.items() if k != "file"})
+            self.save()
+            if r["ok"]:
+                return None
+            if len(checks) >= look_pin.MAX_TRIES:
+                bad_pose = lambda q: q.get("pose_iou") is not None and q["pose_iou"] < look_pin.POSE_MIN_IOU   # noqa
+                best = min(checks, key=lambda q: (bad_pose(q), q["lost_tiles"], -q["ssim"]))
+                shutil.copyfile(res.with_name(best["file"]), res)
+                self.event("look_check_failed", image=name, kept=best["file"],
+                           note="no try kept the whole background and the pose; the best one is used")
+                return None
+            target.pop("job", None)                          # a new job for the next seed
+            res.unlink()
+
     def _figure_look(self, step: dict, name: str, frame: Path, slot: int, out: Path,
-                     place: str | None = None) -> str | None:
+                     place: str | None = None, seed: int | None = None, pinned: dict | None = None,
+                     ref: Path | None = None) -> str | None:
         """One figure of a several-character look: Qwen-Image-Edit puts the character of `slot` (0-based; its frozen
         front view as image 2, its own description) into `frame` (a crop of the Blender frame). `place` ("on the
         left", ...) names the figure among several in a shared crop (the overlap fallback)."""
@@ -3892,13 +3940,19 @@ class Run:
         extra = (self.m.get("look_extra") or "") if slot == 0 else ""
         text = (self.GROUP_LOOK_INSTRUCTION.format(place=place, who=who, extra=extra) if place
                 else self.CROP_LOOK_INSTRUCTION.format(who=who, extra=extra))
-        values.update(instruction=text.replace("  ", " "), seed=int(self.m["seed"]))
-        ref = self.d / (vs.get("front") or next(iter(vs.values())))
+        values.update(instruction=text.replace("  ", " "), seed=int(self.m["seed"] if seed is None else seed))
+        ref = Path(ref) if ref else self.d / (vs.get("front") or next(iter(vs.values())))   # ref: a posed front
         files = {wf.targets("image")[0]: frame, wf.targets("reference")[0]: ref}
-        self.event("look", image=name, view="front", character=slot + 1, place=place,
+        edit = None
+        if pinned:                                      # _pinned_crop: the crop at the edit size + its noise mask
+            from . import look_pin
+            files[wf.targets("image")[0]] = Path(pinned["frame"])
+            files[("look_mask", "image")] = Path(pinned["mask"])
+            edit = look_pin.graph_edit("look_mask")
+        self.event("look", image=name, view="front", character=slot + 1, place=place, pinned=bool(pinned),
                    note=f"Qwen-Image-Edit puts character {slot + 1} into its crop of the Blender frame")
         return self._comfy(step if name == "look" else step.setdefault("parts", {}).setdefault(name, {}), name, wf,
-                           values, files, {wf.output_node: out})
+                           values, files, {wf.output_node: out}, graph_edit=edit)
 
     def _qwen_look(self, step: dict, name: str, frame: Path, view: str, out: Path, mask: Path | None = None,
                    seed: int | None = None, extra: str = "") -> str | None:

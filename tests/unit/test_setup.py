@@ -51,36 +51,18 @@ def test_cloud_needs_the_comfy_key_and_falls_back_when_removed(home):
     assert settings.get()["backend"] == "local"
 
 
-def test_tiers_are_full_models_with_pins():
+def test_video_tiers_use_distilled_int8_with_pinned_files():
     for tier in models.tier_names():
-        b = models.bundle(tier)
+        bundle = models.bundle(tier)
         for slot in {s for f in models.features().values() for s in f}:
-            e = b[slot]
-            assert e["size"] > 0 and len(e["sha256"]) == 64 and "/resolve/" in e["url"], (tier, slot)
-            # the full models only, except the distilled LTX-2.5 of the default layout video (Lightricks' IC-LoRA
-            # pipeline is distilled; user 2026-10-21/22): int8 in both tiers, in slot ltx25_distilled only
-            # + Lightricks' distilled LoRA of the full model's stage 2 (2026-10-25, slot ltx25_distilled_lora)
-            assert ("distill" not in e["file"] or slot in ("ltx25_distilled", "ltx25_distilled_lora"))                 and "turbo" not in e["file"]
-            assert "lightning" not in e["file"].lower()
-    assert models.bundle("8gb")["ltx25_distilled"] == models.bundle("large")["ltx25_distilled"]
-    assert "int8" in models.bundle("large")["ltx25_distilled"]["file"]
-    assert models.bundle("8gb")["ltx25_model"]["file"] != models.bundle("large")["ltx25_model"]["file"]
-
-
-def test_the_stage2_lora_is_video_in_the_large_tier_and_optional_in_8gb(monkeypatch, tmp_path):
-    """The distilled LoRA (8.9 GB, only FINAL runs of the full video model load it): part of `video` in the large
-    tier; in the 8gb tier only when the feature full_stage2 is asked for by name (not in `video`, not in the whole
-    tier). Both tiers' bundles have it (a full graph must find every slot)."""
-    monkeypatch.setattr(models, "models_dir", lambda: tmp_path)
-    e = models.bundle("8gb")["ltx25_distilled_lora"]
-    assert e == models.bundle("large")["ltx25_distilled_lora"] and e["size"] == 8899889568
-    assert "/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/loras/" in e["url"]
-    slots = lambda tier, feats=None: {f["slot"] for f in models.status(tier, feats)["files"]}   # noqa: E731
-    assert "ltx25_distilled_lora" in slots("large", ["video"]) and "ltx25_distilled_lora" in slots("large")
-    assert "ltx25_distilled_lora" not in slots("8gb", ["video"]) and "ltx25_distilled_lora" not in slots("8gb")
-    assert slots("8gb", ["full_stage2"]) == {"ltx25_distilled_lora"}
-    assert "ltx25_distilled_lora" in slots("8gb", ["video", "full_stage2"])
-    assert models.optional_features("8gb") == ["full_stage2"] and models.optional_features("large") == []
+            entry = bundle[slot]
+            assert entry["size"] > 0 and len(entry["sha256"]) == 64 and "/resolve/" in entry["url"]
+        assert "int8" in bundle["ltx25_distilled"]["file"]
+        assert "int8" in bundle["ltx25_text"]["file"]
+        assert "int8" in bundle["qwen_edit_model"]["file"]
+        assert "ltx25_model" not in bundle
+        assert "ltx25_distilled_lora" not in bundle
+    assert "full_stage2" not in models.features()
 
 
 def _fake_tier(monkeypatch, tmp_path, content: bytes):

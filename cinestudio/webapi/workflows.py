@@ -200,7 +200,7 @@ def _saved_list(folder: Path) -> list[dict]:
 @routes.get("/api/workflows")
 async def workflows_list(request: web.Request):
     """The base graphs in workflows/, with the features that use each (grouped)."""
-    rows = [_summary(WORKFLOWS / f"{n}_api.json", n) for n in _graph_names(WORKFLOWS)]
+    rows = [_summary(WORKFLOWS / f"{n}_api.json", n) for n in _graph_names(WORKFLOWS) if not n.startswith("ltx25dev_")]
     for r in rows:                                      # the user's copies and which graph new jobs use
         r.update(_copies_info(r["name"]))
     order = {g: i for i, g in enumerate(GROUPS)}

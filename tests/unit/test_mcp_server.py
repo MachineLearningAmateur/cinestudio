@@ -183,14 +183,14 @@ def run_stubs(tmp_path, monkeypatch):
 
 
 def test_new_video_run_passes_the_run_new_options(run_stubs):
-    r = mcp_server.new_video_run(run_stubs["blend"], "k", "v", video_model="full", character2="b", spacing=1.2,
+    r = mcp_server.new_video_run(run_stubs["blend"], "k", "v", video_model="distilled", character2="b", spacing=1.2,
                                  look_scene="a gym", clip_videos={"2": "she bows"}, audio_relay="carry",
                                  sound_text="sneakers squeak", note="tests the duo", through_clip=1,
                                  advanced={"look_chain": "prev", "adain": 0.3, "character2_rig": "Rig2",
                                            "allow_external": True})
     assert r["ok"]
     kw = run_stubs["kw"]
-    assert kw["video_model"] == "full" and kw["look_scene"] == "a gym" and kw["clip_videos"] == {"2": "she bows"}
+    assert kw["video_model"] == "distilled" and kw["look_scene"] == "a gym" and kw["clip_videos"] == {"2": "she bows"}
     assert kw["character2"] == {"name": "b", "collection": None, "rig": "Rig2"} and kw["spacing"] == 1.2
     assert kw["look_chain"] == "prev" and kw["adain"] == 0.3 and kw["audio_relay"] == "carry"
     assert run_stubs["args"][8] is True                  # allow_external

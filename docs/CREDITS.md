@@ -13,7 +13,6 @@ example your own style LoRAs: they are yours, not part of cinestudio).
 | Model | What cinestudio uses it for | Author | Licence |
 |---|---|---|---|
 | [LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) distilled transformer (int8 ConvRot) | every Blender-shot video (Layout-To-Render), retakes, style redraws | Lightricks | LTX-2.x Community License |
-| [LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) dev transformer (int8 / bf16 by tier) | video-to-video (video templates, Blender shots without a library character, `--profile ltx25dev`) | Lightricks | LTX-2.x Community License |
 | [LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) video VAE, audio VAE, x2 latent spatial upscaler | decode picture and sound; the final-quality refine pass | Lightricks | LTX-2.x Community License |
 | Gemma 4 12B text encoder (with LTX projection, in [Lightricks/LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5)) | LTX-2.5's text encoder | Google (base model), Lightricks (LTX version) | LTX-2.x Community License (as published in the LTX-2.5 repo); Gemma 4: [Apache-2.0](https://ai.google.dev/gemma/apache_2) |
 | [LTX-2.5 IC-LoRA Layout-To-Render](https://huggingface.co/Lightricks/LTX-2.5-22b-IC-LoRA-Layout-To-Render) | the Blender render as the layout guide | Lightricks | LTX-2.x Community License |

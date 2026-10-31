@@ -2,7 +2,8 @@
 
 Every LTX-2.5 graph exists twice: the DISTILLED model (profile ltx25: CFG 1, 8 steps, euler_ancestral) and the FULL
 model (profile ltx25dev: MultimodalGuider CFG 3 video / 7 audio + STG + rescale 0.7, the 30-step dev schedule, a real
-negative). A run chooses one (run new --video-model distilled|full). The two must stay the same graph apart from what
+negative). New runs use the distilled profile only; full-model metadata remains for historical runs and parity tests.
+The two must stay the same graph apart from what
 the MODEL needs, so a fix or a feature made on one reaches the other (user, 2026-10-25: "make sure changes we make to
 distilled and dev versions dont drift apart").
 
@@ -13,9 +14,8 @@ Three parts, all checked by tests/unit/test_model_parity.py:
   @graph_feature decorator on its helper, or register() for a bound value): the node ids and class types it adds, the
   inputs it edits, the values it binds. The parity test builds the clip job graphs of BOTH models with stand-ins and
   checks each feature is wired the same way in both (or declared model-specific here, with a reason).
-- The generators: setup/make_layout_graphs.py, setup/make_redraw_graphs.py and setup/make_txt2img_graphs.py build both
-  members of their pairs; the
-  test regenerates them and compares with workflows/.
+- The generators build the supported distilled graphs by default. Tests can explicitly build historical graphs to
+  compare them with workflows/; this does not require dev model weights.
 """
 from __future__ import annotations
 
@@ -28,8 +28,9 @@ ROOT = Path(__file__).resolve().parent.parent
 WORKFLOWS = ROOT / "workflows"
 
 # the run option "video model" -> the graph profile
-VIDEO_MODELS = {"distilled": "ltx25", "full": "ltx25dev"}
-FULL_MODEL_SLOT = "ltx25_model"           # setup/models.json: the dev transformer (feature "video", both tiers)
+VIDEO_MODELS = {"distilled": "ltx25", "full": "ltx25dev"}  # historical pair metadata
+SUPPORTED_VIDEO_MODELS = {"distilled": "ltx25"}
+FULL_MODEL_SLOT = "ltx25_model"           # historical dev transformer slot; not in the supported model manifest
 
 
 def video_model_of(profile: str | None) -> str:

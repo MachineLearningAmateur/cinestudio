@@ -390,9 +390,9 @@
         <div id="setup-checklist" class="muted">Reading the setup…</div>
       </section>
       <section class="set-sec hidden" data-sec="models">
-        <header><h2>Models</h2><p>Choose the tier for your graphics card. A larger tier runs the models at higher
-          precision. The image models are the full models in every tier; the layout video (a Blender shot with your
-          character) uses the distilled LTX-2.5 in both tiers. Videos that are made or waiting keep their models.</p></header>
+        <header><h2>Models</h2><p>Choose the tier for your graphics card. Both tiers use distilled INT8 LTX-2.5 for video and prefer
+          INT8 image weights where available. The large tier uses larger decode tiles and a larger music model.
+          Existing videos keep their recorded settings.</p></header>
         <div id="models-body" class="muted">Reading the models…</div>
       </section>
       <section class="set-sec hidden" data-sec="tokens">
@@ -535,11 +535,7 @@
           <label title="768×448, stage 1 only: motion, camera and design (about half the time; use it for tests)"><input type="radio" name="quality" value="preview" checked><span>Preview</span></label>
           <label title="1536×896, two-stage upscale (for a chosen demo)"><input type="radio" name="quality" value="final"><span>Final</span></label>
         </div>
-        <label class="fl" data-layout-only title="Distilled: LTX-2.5 distilled, 8 steps (the tested default). Full: the LTX-2.5 dev model, 30 steps with guidance and the negative prompt: about 8x slower in preview (about 20 min a clip on an RTX 3070) and 5x at final; not yet A/B-tested against distilled. Needs the dev model file (part of every tier's download: Settings > Models)."><span>Video model</span>
-          <select name="video_model" id="video-model-select">
-            <option value="distilled">Distilled · fast</option>
-            <option value="full">Full · higher quality, slower</option>
-          </select></label>
+        <select name="video_model" id="video-model-select" hidden aria-label="Video model"><option value="distilled">LTX-2.5 distilled</option></select>
         <label class="fl" title="Random seed: the same seed with the same settings gives the same video"><span>Seed</span>
           <input name="seed" type="number" value="333"></label>
         <label class="fl vnote" title="What this run tests (shown with the run)"><span>Note <i>optional</i></span>

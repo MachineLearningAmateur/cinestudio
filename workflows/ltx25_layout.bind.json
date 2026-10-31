@@ -1,5 +1,5 @@
 {
- "_about": "LTX-2.5 full model, Layout-To-Render IC-LoRA (setup/make_layout_graphs.py): the Blender render as the layout guide + a look image at frame -1",
+ "_about": "LTX-2.5 distilled model, Layout-To-Render IC-LoRA (setup/make_layout_graphs.py): the Blender render as the layout guide + a look image at frame -1",
  "profile": "ltx25",
  "capabilities": {
   "audio": true,

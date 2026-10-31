@@ -17,21 +17,19 @@ limits a download to one feature (video, character, music, select, pose, backgro
 
 | Tier | GPU / RAM | Precision | Files (every feature) |
 |---|---|---|---|
-| `8gb` | 8 GB VRAM, 32 GB RAM (tested: RTX 3070) | int8 (ConvRot) models, fp8 Qwen text encoder | about 156 GB |
-| `large` | 80 GB+ VRAM, about 120 GB RAM (RunPod: RTX PRO 6000 96 GB, H100 SXM) | bf16 full models | about 225 GB |
+| `8gb` | 8 GB VRAM, 32 GB RAM (tested: RTX 3070) | int8 (ConvRot) models, fp8 Qwen text encoder | about 134 GB |
+| `large` | 80 GB+ VRAM, about 120 GB RAM (RunPod: RTX PRO 6000 96 GB, H100 SXM) | INT8 video and Qwen edit; larger ACE-Step model | about 144 GB |
 
 `large` was called `24gb` before 2026-10-24; the old name still works. The tier is frozen into each run: a run keeps the
 models it was made with. The large tier also writes larger VAE decode tiles into a run's graphs.
 
-The default video (Layout-To-Render for a Blender shot with a library character) uses the **distilled** LTX-2.5 int8
-transformer in both tiers. The full (dev) LTX-2.5 transformer is used for video-to-video (video templates, a Blender
-shot without a library character, `run new --profile ltx25dev`).
+Both Blender and video-to-video workflows use the **distilled INT8 LTX-2.5** transformer in both tiers. Existing full-model runs remain viewable, but cannot be resumed or retaken.
 
 ## What each feature needs
 
 | Feature | Use | Files |
 |---|---|---|
-| video | LTX-2.5 videos | LTX-2.5 distilled + dev transformers, Gemma 4 text encoder, video and audio VAE, spatial upscaler, Layout-To-Render and Ingredients 2.5 IC-LoRAs, the LTX-2.3 union control IC-LoRA (pose guide, video-to-video), the Qwen edit files (the look image) |
+| video | LTX-2.5 videos | LTX-2.5 distilled INT8 transformer, Gemma 4 text encoder, video and audio VAE, spatial upscaler, Layout-To-Render and Ingredients 2.5 IC-LoRAs, the LTX-2.3 union control IC-LoRA (pose guide, video-to-video), the Qwen edit files (the look image) |
 | character | front views, edits, views, repose | Z-Image (base), its text encoder and VAE; Qwen-Image-Edit-2511, its text encoder and VAE; Multiple-Angles LoRA; AnyPose base + helper LoRAs |
 | music | songs | ACE-Step 1.5 (base in 8gb, XL sft in large), its two text encoders and VAE |
 | background | 360 panoramas, backplates, 360 depth | Qwen-Image-2512 GGUF Q8, the qwen-360-diffusion LoRA, MoGe-2 |
@@ -46,7 +44,6 @@ Common to both tiers:
 | File | Folder | Size | Source | Licence |
 |---|---|---|---|---|
 | `ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors` (gated) | `diffusion_models` | 21.5 GB | [Lightricks/LTX-2.5](https://huggingface.co/Lightricks/LTX-2.5) | LTX-2.x Community License |
-| `ltx-2.5-22b-distilled-lora-450-bf16.safetensors` (gated; stage 2 of the full model's FINAL layout clips; video in the large tier, the optional feature `full_stage2` in 8gb) | `loras` | 8.9 GB | Lightricks/LTX-2.5 | LTX-2.x Community License |
 | `ltx-2.5-video-vae-bf16.safetensors` (gated) | `vae` | 1.47 GB | Lightricks/LTX-2.5 (the diffusion decoder: CausalDiffusionVAE, one step, ComfyUI core) | LTX-2.x Community License |
 | `ltx-2.5-audio-vae-bf16.safetensors` (gated) | `vae` | 0.36 GB | Lightricks/LTX-2.5 | LTX-2.x Community License |
 | `ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors` (gated) | `latent_upscale_models` | 1.0 GB | Lightricks/LTX-2.5 | LTX-2.x Community License |
@@ -74,10 +71,9 @@ Per tier:
 
 | Slot | `8gb` | `large` |
 |---|---|---|
-| Qwen-Image-Edit-2511 (`diffusion_models`) | `qwen_image_edit_2511_int8_convrot.safetensors` 20.5 GB | `qwen_image_edit_2511_bf16.safetensors` 40.9 GB |
-| Qwen edit text encoder (`text_encoders`) | `qwen_2.5_vl_7b_fp8_scaled.safetensors` 9.4 GB | `qwen_2.5_vl_7b.safetensors` 16.6 GB |
-| LTX-2.5 dev transformer (`diffusion_models`, gated) | `ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors` 21.5 GB | `ltx-2.5-22b-dev-transformer-bf16.safetensors` 42.0 GB |
-| LTX-2.5 text encoder, Gemma 4 12B (`text_encoders`, gated) | `gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors` 15.4 GB | `gemma4-12b-with-proj-ltx-2.5-bf16.safetensors` 26.3 GB |
+| Qwen-Image-Edit-2511 (`diffusion_models`) | `qwen_image_edit_2511_int8_convrot.safetensors` 20.5 GB | `qwen_image_edit_2511_int8_convrot.safetensors` 20.5 GB |
+| Qwen edit text encoder (`text_encoders`) | `qwen_2.5_vl_7b_fp8_scaled.safetensors` 9.4 GB | `qwen_2.5_vl_7b_fp8_scaled.safetensors` 9.4 GB |
+| LTX-2.5 text encoder, Gemma 4 12B (`text_encoders`, gated) | `gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors` 15.4 GB | `gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors` 15.4 GB |
 | ACE-Step model (`diffusion_models`) | `acestep_v1.5_base.safetensors` 4.8 GB | `acestep_v1.5_xl_sft_bf16.safetensors` 10.0 GB |
 | ACE-Step second text encoder (`text_encoders`) | `qwen_1.7b_ace15.safetensors` 3.7 GB | `qwen_4b_ace15.safetensors` 8.4 GB |
 

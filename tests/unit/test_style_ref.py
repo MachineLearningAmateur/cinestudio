@@ -234,10 +234,12 @@ def test_cli_make_and_use_reference(home, monkeypatch, capsys, tmp_path):
         return {"style": name, "candidates": []}
     monkeypatch.setattr(style_ref, "run_job", fake_run)
     code, out = _cli(capsys, "style", "make-reference", "3d_animated", "--subject", "a cat", "--seeds", "5,6",
-                     "--video-model", "full")
+                     "--video-model", "distilled")
     assert code == 0 and out["ok"]
-    assert seen == {"name": "3d_animated", "subject": "a cat", "seeds": "5,6", "ref": None, "model": "full"}
-    assert style_ref.profile_of("full") == "ltx25dev" and style_ref.profile_of(None) is None
+    assert seen == {"name": "3d_animated", "subject": "a cat", "seeds": "5,6", "ref": None, "model": "distilled"}
+    assert style_ref.profile_of("distilled") == "ltx25" and style_ref.profile_of(None) is None
+    with pytest.raises(style_ref.StyleRefError):
+        style_ref.profile_of("full")
     code, out = _cli(capsys, "style", "use-reference", "3d_animated", str(_pic(tmp_path / "c.png")), "--crop", "0,0,64,64")
     assert code == 0 and out["crop"] == [0, 0, 64, 64]
     code, out = _cli(capsys, "style", "show", "3d_animated")

@@ -279,7 +279,7 @@ def make_style_reference(name: str, subject: str | None = None, seeds: list[int]
     """Queue reference-picture candidates for a style made by the VIDEO model (a GPU job): LTX-2.5 + the style's LoRA
     draw a still shot of `subject` from text only (default: a young woman in a hooded jacket in a city street, full
     body; a person, cloth and a place), one candidate per seed (default 202, 303, 404, 505; the sharpest frame of each).
-    A style without a LoRA shows LTX's own look for its words. `video_model`: distilled (default, the model of the
+    A style without a LoRA shows LTX's own look for its words. `video_model`: distilled (the model of the
     layout videos) or full. Returns the queue ref at once; poll show_style
     (reference_job, reference_candidates) at most once a minute; LOOK at the pictures, then use_style_reference."""
     from . import style_ref
@@ -995,7 +995,7 @@ def new_video_run(blend: str, character_name: str, video: str, style: str = "", 
     per figure, keyframe looks off; on a one-mannequin template the mannequin is copied for each (`spacing` m apart).
     `character2`: the old form of a two-item `characters`. `sound`: auto (the shot's own sound) or ltx; `song`: a
     library song from its second `song_start`; `sound_text`: an audible sound sentence for LTX (never "quiet"); `audio_relay` carry|off.
-    `video_model`: distilled (default) or full (dev model, ~5-8x slower; not yet A/B-tested). `describe_facing`,
+    `video_model`: distilled (the supported LTX-2.5 INT8 video model). `describe_facing`,
     `body_type` chibi|standard, `control_video`, `ingredients_strength`: as in `run new`. `note`: what this run tests.
     `props` {"Ball_*": "red and white beach balls"}: the run's own words for the template's prop groups (the groups:
     template_layers / the list's "props"; only the given ones change, the others keep the template's words).

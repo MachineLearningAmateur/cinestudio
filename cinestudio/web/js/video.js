@@ -396,9 +396,8 @@ function renderModeState() {
   const v2v = (f.blend.value || "").startsWith("template:");   // only template videos run video-to-video
   $$("#form-video [data-v2v-only]").forEach((el) => el.classList.toggle("hidden", !v2v));
   $$("#form-video [data-layout-only]").forEach((el) => el.classList.toggle("hidden", v2v));
-  // steps, guidance and the negative belong to the full model: video-to-video always, a Blender shot when the
-  // Video model select says Full (the distilled model has a fixed 8-step schedule at CFG 1)
-  const full = v2v || f.video_model.value === "full";
+  // Full-model options do not apply to the supported distilled video model.
+  const full = false;
   $$("#form-video [data-full-model]").forEach((el) => el.classList.toggle("hidden", !full));
 }
 renderModeState();

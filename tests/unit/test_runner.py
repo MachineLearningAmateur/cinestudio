@@ -1328,112 +1328,17 @@ def test_a_run_on_the_retired_ltx23_graphs_is_listed_but_refused_with_a_clear_me
         runner.check_runnable("missing")
 
 
-def test_the_video_model_option_chooses_the_layout_graphs(env):
-    """run new --video-model distilled|full: the profile of a layout run, recorded; full needs the dev transformer."""
+def test_new_runs_use_distilled_and_refuse_full_model(env):
     from cinestudio import character as chars
-    mp = env["mp"]
-    mp.setattr(chars, "load", lambda name: {"description": "on black: a figure", "files": {"front": str(env["sheet"])}})
-    mp.setattr(runner, "full_model_missing", lambda tier, quality="final": None)
+    env["mp"].setattr(chars, "load", lambda name: {"description": "on black: a figure", "files": {"front": str(env["sheet"])}})
     m = runner.new_run(env["blend"], env["sheet"], "a figure", "it waves", character_name="hero")
-    assert (m["profile"], m["video_model"]) == ("ltx25", "distilled")              # the default: distilled
-    assert m["stage2"]["recipe"] == "distilled" and not m["stage2"]["runs"] and "lora" not in m["stage2"]
-    m = runner.new_run(env["blend"], env["sheet"], "a figure", "it waves", character_name="hero", video_model="full",
-                       steps=24, guidance=3.5)
-    assert (m["profile"], m["video_model"]) == ("ltx25dev", "full")
-    wfd = runner.run_dir(m["id"]) / "inputs" / "workflows"
-    assert (wfd / "ltx25dev_layouting_api.json").is_file() and (wfd / "ltx25dev_layout_api.json").is_file()
-    d = runner.run_details(m["id"])
-    assert dict(d["other"])["Video model"] == "full (dev), 24 steps, guidance 3.5" and d["negative_used"]
-    assert any(c["label"] == "Video model" and c["value"] == "full" for c in d["chips"])
-    assert {"name": "video_model", "value": "full", "default": "distilled"} in d["changes"]
-    plain = runner.run_details(runner.new_run(env["blend"], env["sheet"], "a", "b", character_name="hero")["id"])
-    assert dict(plain["other"])["Video model"] == "distilled (8 steps, CFG 1)"
-    assert not any(c["name"] == "video_model" for c in plain["changes"])
-    with pytest.raises(runner.RunError, match="fixed 8-step"):                     # steps belong to the full model
-        runner.new_run(env["blend"], env["sheet"], "a", "b", character_name="hero", video_model="distilled", steps=20)
-    with pytest.raises(runner.RunError, match="not ltx25"):
-        runner.new_run(env["blend"], env["sheet"], "a", "b", character_name="hero", video_model="full", profile="ltx25")
+    assert (m["profile"], m["video_model"]) == ("ltx25", "distilled")
+    assert m["stage2"]["recipe"] == "distilled"
     with pytest.raises(runner.RunError, match="video model must be"):
-        runner.new_run(env["blend"], env["sheet"], "a", "b", character_name="hero", video_model="turbo")
-    mp.setattr(runner, "full_model_missing",
-               lambda tier, quality="final": "the full video model is not downloaded; models download")
-    with pytest.raises(runner.RunError, match="not downloaded"):
         runner.new_run(env["blend"], env["sheet"], "a", "b", character_name="hero", video_model="full")
-
-
-def test_a_full_run_records_its_stage2_recipe(env):
-    """2026-10-25: the full model's stage 2 = the dev transformer + the distilled LoRA, CFG 1, the distilled sigmas
-    (Lightricks' two-stage recipe); the manifest says which stage 2 the run's frozen graphs make, and each clip which
-    one made it. A run frozen before (MultimodalGuider stage 2) reads as "guided"."""
-    from cinestudio import character as chars
-    mp = env["mp"]
-    mp.setattr(chars, "load", lambda name: {"description": "on black: a figure", "files": {"front": str(env["sheet"])}})
-    mp.setattr(runner, "full_model_missing", lambda tier, quality="final": None)
-    m = runner.new_run(env["blend"], env["sheet"], "a figure", "it waves", character_name="hero", video_model="full",
-                       quality="final")
-    s2 = m["stage2"]
-    assert s2["recipe"] == "distilled-lora" and s2["runs"] and s2["guidance"] == "CFG 1" and s2["sampler"] == "euler"
-    assert s2["sigmas"] == "0.909375, 0.725, 0.421875, 0.0"
-    assert s2["lora"] == {"file": "ltx-2.5-22b-distilled-lora-450-bf16.safetensors", "strength": 1.0}
-    assert m["models"]["files"]["ltx25_distilled_lora"]["sha256"].startswith("86370bbf")
-    assert runner.stage2_label(m) == "dev + distilled LoRA 1, CFG 1, 3 steps"
-    assert dict(runner.run_details(m["id"])["other"])["Stage 2 (x2 refine)"] == runner.stage2_label(m)
-    wfd = runner.run_dir(m["id"]) / "inputs" / "workflows"            # an old run's frozen graph: the guided stage 2
-    g = json.loads((wfd / "ltx25dev_layouting_api.json").read_text(encoding="utf-8"))
-    g["guider2"] = {"class_type": "MultimodalGuider", "inputs": {}}
-    g.pop("lora_dist")
-    (wfd / "ltx25dev_layouting_api.json").write_text(json.dumps(g), encoding="utf-8")
-    b = json.loads((wfd / "ltx25dev_layouting.bind.json").read_text(encoding="utf-8"))
-    b["capabilities"].pop("stage2")
-    (wfd / "ltx25dev_layouting.bind.json").write_text(json.dumps(b), encoding="utf-8")
-    old = runner.stage2_recipe(wfd, "ltx25dev", "final")
-    assert old["recipe"] == "guided" and old["guidance"] == "guided" and "lora" not in old
-    m_prev = runner.new_run(env["blend"], env["sheet"], "a figure", "it waves", character_name="hero",
-                            video_model="full", quality="preview")
-    assert m_prev["stage2"]["recipe"] == "distilled-lora" and not m_prev["stage2"]["runs"]
-    assert runner.stage2_label(m_prev) is None                       # a preview makes no stage 2
-
-
-def test_a_fork_fills_a_slot_its_parent_never_froze(tmp_path):
-    """A fork takes today's graphs with the parent's frozen files: a slot the parent never had (the stage-2 LoRA of
-    2026-10-25) comes from the tier, the parent's own files stay."""
-    import shutil
-    from cinestudio import models
-    from cinestudio.workflow import WORKFLOWS
-    for name in ("ltx25dev_layouting_api.json", "ltx25dev_layouting.bind.json"):
-        shutil.copy(WORKFLOWS / name, tmp_path / name)
-    parent = {k: v for k, v in models.bundle("8gb").items() if k != "ltx25_distilled_lora"}
-    parent["ltx25_text"] = dict(parent["ltx25_text"], file="old-gemma.safetensors")
-    out = runner._freeze_tier(tmp_path, "8gb", parent, settings={})
-    assert out["files"]["ltx25_distilled_lora"]["file"] == "ltx-2.5-22b-distilled-lora-450-bf16.safetensors"
-    assert out["files"]["ltx25_text"]["file"] == "old-gemma.safetensors"
-
-
-def test_the_full_model_check_names_the_download(env, tmp_path):
-    from cinestudio import models
-    mp = env["mp"]
-    mp.setattr(models, "models_dir", lambda: tmp_path / "models")
-    real_bundle = models.bundle                          # small sizes: truncate() to the real 20 GB / 8 GB sizes
-    mp.setattr(models, "bundle", lambda tier: {k: dict(v, size=64) for k, v in real_bundle(tier).items()})
-    #                                                      filled the disk on NTFS (84 GB in three kept pytest runs)
-    why = runner.full_model_missing("8gb")
-    assert "ltx-2.5-22b-dev-transformer-comfy-int8-convrot" in why and "--tier 8gb --feature video" in why
-    assert "--tier large" in runner.full_model_missing("large") and "bf16" in runner.full_model_missing("large")
-    e = models.bundle("8gb")["ltx25_model"]
-    f = tmp_path / "models" / e["dir"] / e["file"]
-    f.parent.mkdir(parents=True)
-    with open(f, "wb") as fh:                                                        # the right size: ready
-        fh.truncate(e["size"])
-    why = runner.full_model_missing("8gb")                        # a FINAL run also needs the stage-2 LoRA
-    assert "distilled-lora-450" in why and "--tier 8gb --feature full_stage2" in why
-    assert runner.full_model_missing("8gb", "preview") is None   # a preview runs stage 1 only
-    assert "--tier large --feature video" in runner.full_model_missing("large", "preview")
-    e = models.bundle("8gb")["ltx25_distilled_lora"]
-    f = tmp_path / "models" / e["dir"] / e["file"]
-    f.parent.mkdir(parents=True, exist_ok=True)
-    with open(f, "wb") as fh:
-        fh.truncate(e["size"])
-    assert runner.full_model_missing("8gb") is None
+    with pytest.raises(runner.RunError, match="distilled video profile"):
+        runner.new_run(env["blend"], env["sheet"], "a", "b", character_name="hero", profile="ltx25dev")
+    assert "retired LTX-2.5 full model" in runner.retired({"profile": "ltx25dev"})
 
 
 def test_a_fork_and_a_take_keep_the_video_model(env):

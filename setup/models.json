@@ -79,10 +79,9 @@
   }
  ],
  "model_tiers": {
-  "_about": "Model tiers (Settings > Quick setup, `cinestudio models`). Every tier uses the FULL (non-distilled) models; a tier sets the precision only. Files are pinned like the profiles above. 'common' slots are the same in every tier. A dir that starts with '@aux/' is inside the comfyui_controlnet_aux node folder. Graphs use a tier only when their binding says capabilities.recipe = 'full' and lists the slots in 'models' (the distilled graphs keep their own files).",
+  "_about": "Model tiers (Settings > Quick setup, `cinestudio models`). Video uses LTX-2.5 distilled INT8; both tiers prefer INT8 weights where available. Files are pinned like the profiles above. 'common' slots are the same in every tier. A dir that starts with '@aux/' is inside the comfyui_controlnet_aux node folder. Graphs use a tier only when their binding says capabilities.recipe = 'full' and lists the slots in 'models' (the distilled graphs keep their own files).",
   "features": {
    "video": [
-    "ltx25_model",
     "ltx25_text",
     "ltx25_vae",
     "ltx25_audio_vae",
@@ -91,13 +90,9 @@
     "ic_ingredients25",
     "ic_layout",
     "ltx25_distilled",
-    "ltx25_distilled_lora",
     "qwen_edit_model",
     "qwen_edit_text",
     "qwen_vae"
-   ],
-   "full_stage2": [
-    "ltx25_distilled_lora"
    ],
    "character": [
     "zimage_model",
@@ -314,15 +309,6 @@
     "sha256": "c4279eeff115cbeaca494bd2183e7d768c38fe85a184dc6afbb7159157c44334",
     "gated": true
    },
-   "ltx25_distilled_lora": {
-    "dir": "loras",
-    "file": "ltx-2.5-22b-distilled-lora-450-bf16.safetensors",
-    "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/loras/ltx-2.5-22b-distilled-lora-450-bf16.safetensors",
-    "size": 8899889568,
-    "sha256": "86370bbf79a9eb4edaa158907e2b48a5188fe4c5dc8ce30c7eb8f2f131a9bbf5",
-    "gated": true,
-    "note": "Lightricks' distilled LoRA for dev-transformer workflows (LTX-2 Community License, the LTX-2.5 repo): stage 2 of the FULL video model's layout graphs = the dev transformer + this LoRA, CFG 1, the distilled stage-2 sigmas 0.909375..0 (ltx-pipelines TI2VidTwoStagesPipeline; 2026-10-25). One bf16 file for both tiers; only FINAL runs load it (a preview has no stage 2). Feature video in the large tier, the optional feature full_stage2 in the 8gb tier"
-   },
    "sam3d_body": {
     "dir": "detection",
     "file": "sam_3d_body_dinov3_bf16.safetensors",
@@ -344,8 +330,8 @@
     "label": "8 GB VRAM",
     "vram_gb": 8,
     "ram_gb": 32,
-    "about": "int8 video model (LTX-2.5 dev), int8 text encoder, int8 (ConvRot) image edit model: int8 matmuls are native on RTX 30/40/50 cards; the fp8 file was emulated as bf16 on an RTX 3070 (2026-10-24). Tested class: RTX 3070 8 GB + 32 GB RAM.",
-    "optional_features": ["full_stage2"],
+    "about": "int8 video model (LTX-2.5 distilled), int8 text encoder, int8 (ConvRot) image edit model: int8 matmuls are native on RTX 30/40/50 cards; the fp8 file was emulated as bf16 on an RTX 3070 (2026-10-24). Tested class: RTX 3070 8 GB + 32 GB RAM.",
+    "optional_features": [],
     "slots": {
      "qwen_edit_model": {
       "dir": "diffusion_models",
@@ -375,14 +361,6 @@
       "size": 3708523360,
       "sha256": "ed63e9247d1f55f3ace04fa11e95b085fc82d459c82c5626f0b2e37b91ebd710"
      },
-     "ltx25_model": {
-      "dir": "diffusion_models",
-      "file": "ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors",
-      "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/diffusion_models/ltx-2.5-22b-dev-transformer-comfy-int8-convrot.safetensors",
-      "size": 21504034224,
-      "sha256": "2edbdb4465cd6c3b532cd67a31ddb38a63e97dcad20be3729675e2a4e8caf92b",
-      "gated": true
-     },
      "ltx25_text": {
       "dir": "text_encoders",
       "file": "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
@@ -397,9 +375,9 @@
     "label": "Large GPU (80 GB+)",
     "vram_gb": 80,
     "ram_gb": 120,
-    "about": "For an 80-96 GB GPU (RunPod: RTX PRO 6000 96 GB recommended, H100 SXM 80 GB for the fastest runs; renamed from 24gb on 2026-10-24: the bf16 files need about 68 GB for LTX + Gemma and 41 GB for Qwen, so a 24 GB card streamed them from RAM). bf16 for the full models (LTX-2.5 dev bf16, Gemma 4 bf16, Qwen edit bf16) and the larger ACE-Step XL music model; the DISTILLED LTX-2.5 (the default layout video) stays int8 like the 8gb tier (user, 2026-10-22); the panorama model stays GGUF Q8 and MoGe fp16. The RAM need is a first estimate.",
+    "about": "Large GPU settings with LTX-2.5 distilled INT8, INT8 Qwen editing, and larger VAE decode tiles.",
     "engine": {
-     "_about": "several model families stay loaded in one ComfyUI engine (no restart and no reload from the network volume at each family change: server.shared_engine). Only on a machine with at least min_ram_gb of RAM: a run's Qwen (bf16 edit 41 GB + VL 17 GB) + LTX (int8 21.5 GB + Gemma bf16 26 GB) + ACE-Step XL is about 120 GB. 150 = an RTX PRO 6000 pod (188 GB) shares, an H100 SXM pod (125 GB) restarts as before. To check on the first pod.",
+     "_about": "several model families stay loaded in one ComfyUI engine (no restart and no reload from the network volume at each family change: server.shared_engine). Only on a machine with at least min_ram_gb of RAM. INT8 Qwen editing and INT8 LTX share the engine on eligible machines. Recheck combined memory use on a pod.",
      "share_families": true,
      "min_ram_gb": 150
     },
@@ -410,17 +388,17 @@
     "slots": {
      "qwen_edit_model": {
       "dir": "diffusion_models",
-      "file": "qwen_image_edit_2511_bf16.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/f68ace85e60b4a02a323e394253731947657b7d2/split_files/diffusion_models/qwen_image_edit_2511_bf16.safetensors",
-      "size": 40861031560,
-      "sha256": "ae42d927b5fac4f278b9a894554c727e619727a63622976f2d95625be4bce08c"
+      "file": "qwen_image_edit_2511_int8_convrot.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/f68ace85e60b4a02a323e394253731947657b7d2/split_files/diffusion_models/qwen_image_edit_2511_int8_convrot.safetensors",
+      "size": 20499083824,
+      "sha256": "11b5af5ac601821d73930c84846c9a158e67177356daf927ce1c8d10f3963829"
      },
      "qwen_edit_text": {
       "dir": "text_encoders",
-      "file": "qwen_2.5_vl_7b.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/1f12b17be14c89b026c51a91d67c32f84bb047bc/split_files/text_encoders/qwen_2.5_vl_7b.safetensors",
-      "size": 16584415576,
-      "sha256": "cfafd739459bc86257397259f612a9aee88e5b98e85b5c0d0d1717e898b3463a"
+      "file": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/1f12b17be14c89b026c51a91d67c32f84bb047bc/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "size": 9384670680,
+      "sha256": "cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4"
      },
      "ace_model": {
       "dir": "diffusion_models",
@@ -436,20 +414,12 @@
       "size": 8379154232,
       "sha256": "ffe5ffb855086c2ab55e467e9859fb01894781020a0376484dd19de166b79873"
      },
-     "ltx25_model": {
-      "dir": "diffusion_models",
-      "file": "ltx-2.5-22b-dev-transformer-bf16.safetensors",
-      "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/diffusion_models/ltx-2.5-22b-dev-transformer-bf16.safetensors",
-      "size": 42018190584,
-      "sha256": "792a2bad501ca03262c0bc2ce7a2949e85b142ce18e30894aad5bc849c8e7584",
-      "gated": true
-     },
      "ltx25_text": {
       "dir": "text_encoders",
-      "file": "gemma4-12b-with-proj-ltx-2.5-bf16.safetensors",
-      "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/text_encoders/gemma4-12b-with-proj-ltx-2.5-bf16.safetensors",
-      "size": 26263858182,
-      "sha256": "ef7243612fdae7a75cb4d5cee9433e81380675fb6c213bd98ae74a9cd16561d1",
+      "file": "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+      "url": "https://huggingface.co/Lightricks/LTX-2.5/resolve/49b093a39c19169a8a81721dcc541e07e945232f/text_encoders/gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+      "size": 15372969374,
+      "sha256": "6ce688a0aa98a5fa36a9f1e6c3f42152a498cc2b53ee8c15674c64244f91487f",
       "gated": true
      }
     }

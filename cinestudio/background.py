@@ -712,6 +712,8 @@ def style_pass(name: str, style_lora: str, keep: float = 0.5, strength: float = 
               f"the camera does not move. No people, no camera, no tripod.")
     from . import runner
     prof = profile or runner.LAYOUT_PROFILE
+    if prof != runner.LAYOUT_PROFILE:
+        raise BackgroundError("Only the LTX-2.5 distilled video profile (ltx25) is supported")
     start = round(1.0 - float(keep), 4)
     wf = ProfileWorkflow(prof, "redraw", models=_models.job_bundle())
     sig = (runner.dev_source_sigmas(start, WIDTH + 2 * WRAP, HEIGHT, 9) if wf.capabilities.get("recipe") == "full"

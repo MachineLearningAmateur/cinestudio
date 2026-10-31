@@ -470,8 +470,10 @@ def test_new_video_form_passes_the_video_model(monkeypatch):
     monkeypatch.setattr(workqueue, "add", lambda *a, **k: None)
     monkeypatch.setattr(cli, "_start_detached", lambda rid: {"ok": True})
     form = {"blend": "shot.blend", "character": "k", "video": "v"}
-    runs_api._run_new({**form, "video_model": "full"})
-    assert seen["video_model"] == "full"
+    runs_api._run_new({**form, "video_model": "distilled"})
+    assert seen["video_model"] == "distilled"
+    with pytest.raises(ValueError, match="video_model"):
+        runs_api._run_new({**form, "video_model": "full"})
     runs_api._run_new(form)
     assert seen["video_model"] is None                        # empty = the run default (distilled for layout)
     with pytest.raises(ValueError):

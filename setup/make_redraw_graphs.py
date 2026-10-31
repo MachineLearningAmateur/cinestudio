@@ -1,8 +1,8 @@
 """Make the image-to-image "redraw" graphs (workflows/<profile>_redraw) from the restyle graphs.
 
-    python setup/make_redraw_graphs.py            # ltx25 (distilled) and ltx25dev (full)
+    python setup/make_redraw_graphs.py            # ltx25 distilled
 
-The single source of the redraw pair: edit this script (or the restyle graphs), never the redraw files;
+The source of the supported redraw graph: edit this script (or the restyle graph), never the redraw files;
 tests/unit/test_model_parity.py checks that it reproduces workflows/.
 
 Why (2026-10-22): the restyle graph puts the picture in as frame 0 of a 9-frame clip with a noise mask
@@ -64,5 +64,5 @@ def make(profile: str) -> None:
 
 
 if __name__ == "__main__":
-    for p in ("ltx25", "ltx25dev"):
+    for p in ("ltx25",):
         make(p)

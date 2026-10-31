@@ -1,8 +1,8 @@
 """Make the text-to-picture graphs (workflows/<profile>_txt2img) from the redraw graphs.
 
-    python setup/make_txt2img_graphs.py            # ltx25 (distilled) and ltx25dev (full)
+    python setup/make_txt2img_graphs.py            # ltx25 distilled
 
-The single source of the txt2img pair: edit this script (or the redraw graphs), never the txt2img files;
+The source of the supported txt2img graph: edit this script (or the redraw graph), never the txt2img files;
 tests/unit/test_model_parity.py checks that it reproduces workflows/.
 
 Why (2026-10-25, user: "why cant we have the lora generate first using prompt and then qwen uses that as a reference img"):
@@ -83,5 +83,5 @@ def make(profile: str) -> None:
 
 
 if __name__ == "__main__":
-    for p in ("ltx25", "ltx25dev"):
+    for p in ("ltx25",):
         make(p)

@@ -213,6 +213,8 @@ def make_reference(name: str, subject: str | None = None, seeds=None, profile: s
     seeds = parse_seeds(seeds)
     prompt_for(st, subject)                            # refuse a bad subject before any GPU work
     prof = profile or runner.LAYOUT_PROFILE
+    if prof != runner.LAYOUT_PROFILE:
+        raise StyleRefError("Only the LTX-2.5 distilled video profile (ltx25) is supported")
     wf = ProfileWorkflow(prof, VARIANT, models=_models.job_bundle())
     recipe = wf.capabilities.get("recipe") or "distilled"
     frames_out = wf.bind["outputs"]["frames"]
@@ -316,7 +318,7 @@ def profile_of(video_model: str | None) -> str | None:
     """"distilled" / "full" -> the graph profile (None = the default, the distilled model)."""
     if not video_model:
         return None
-    from .model_pairs import VIDEO_MODELS
+    from .model_pairs import SUPPORTED_VIDEO_MODELS as VIDEO_MODELS
     if video_model not in VIDEO_MODELS:
         raise StyleRefError(f"video model must be one of {sorted(VIDEO_MODELS)}")
     return VIDEO_MODELS[video_model]

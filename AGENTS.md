@@ -755,23 +755,9 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
 - Write the costume's garment lengths into `--look-text` when the description and the sheet disagree (the look image
   decides the costume: a poncho became a capelet).
 - A `--note "what this run tests"` is shown in the app with the settings that differ from a default run.
-- **Two video models** (`run new --video-model distilled|full`, the app's Video model select, MCP `video_model`):
-  `distilled` (default, ltx25_layout[ing]: 8 steps, CFG 1) or `full` (ltx25dev_layout[ing]: the dev model, 30 steps,
-  MultimodalGuider CFG 3 + STG, the negative; `--steps`/`--guidance` apply). Full is about 8x slower in preview (~20 min
-  a clip on the 3070: 4 guider passes x 30 steps vs 1 x 8) and ~5x at final (estimate from measured s/step). It is
-  kept in parity by the generator and tests/unit/test_model_parity.py, but NOT A/B-tested against distilled yet (plan:
-  one blind A/B in the first RunPod session, same shot and seed). It needs the dev transformer (`models download
-  --feature video`); forks and retakes keep the run's model.
-- **Final output = the distilled model (user, 2026-10-25);** the full (dev) model is the optional "higher quality"
-  path, kept up to date and in parity.
-- **Stage 2 of the full model (2026-10-25):** Lightricks' two-stage recipe (ltx-pipelines TI2VidTwoStagesPipeline):
-  the dev transformer + `loras/ltx-2.5-22b-distilled-lora-450-bf16` (node `lora_dist`, strength 1.0 = their default;
-  the CLI example uses 0.8; binding `stage2_lora_strength`), CFGGuider cfg 1, the distilled stage-2 sigmas 0.909375,
-  0.725, 0.421875, 0 with plain euler (3 model calls instead of the old 6 steps x 2 CFG passes). Stage 1 keeps the dev
-  guider. One graph for both tiers: on 8 GB ComfyUI's dynamic VRAM memory-maps every safetensors file (fast_disk) and
-  streams the weights per layer, so the 8.9 GB LoRA needs no second resident copy (the dev run already streamed 20.5 GB
-  + 480 LoRA patches with ~3.5 GB RAM free). The manifest's `stage2` and each clip's `stage2` say which stage 2 ran
-  (`distilled`, `distilled-lora`, or `guided` = the old MultimodalGuider stage 2 frozen in older runs); a preview has none.
+- **Video model:** new Blender layout and video-to-video runs use LTX-2.5 distilled INT8 (8 steps, CFG 1).
+  The dev/full profile is retired: existing runs stay playable but cannot be resumed, retaken or forked. Preview and
+  final quality select the stage count and resolution, not a different video model.
 
 ### 7.2 Prompts (LTX)
 - New runs use the Ingredients 2.5 headings ("### Reference Sheet Description ... ### Target Description ...") with
@@ -963,7 +949,7 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   look|match` (a blue jacket, seams) and `--look-chain anchor` (the front view's background pasted into back views);
   AdaIN 1.0 in every clip (a black veil): use 1.0 only as a one-clip retake. `--clip-text auto` gave no visible gain.
 - Video-to-video (start noise, skeleton drawing) remains for video templates and Blender shots without a library
-  character: new runs use the `ltx25dev_*` graphs (the LTX-2.5 dev model). The LTX-2.3 graphs are retired: old runs
+  character: new runs use the distilled `ltx25_*` graphs. The LTX-2.3 and LTX-2.5 dev profiles are retired: old runs
   stay listed and playable, and a start, retake or fork is refused (`runner.retired`).
 
 ### 7.5 The clip gauntlet (a long shot clip by clip until each clip passes)
@@ -1034,15 +1020,11 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
 
 ## 10. Setup, models, tokens, RunPod
 
-- Model tiers (`setup/models.json`, `models download --tier 8gb|large`, Settings > Quick setup): every file pinned
-  (commit, size, SHA-256); the tier sets the precision; the tier is frozen into each run. The layout video uses the
-  distilled LTX-2.5 int8 transformer in both tiers; the 8gb tier's Qwen edit file is int8 ConvRot. Tiers: `8gb` (tested:
-  RTX 3070 + 32 GB RAM) and `large` (bf16; an 80 GB+ GPU and ~120 GB RAM; was `24gb`, the old name still works). A tier's
-  `graph_settings` are written into a run's graphs (the large tier: VAE decode tiles 1024/256/128/48).
-  `models civitai VERSION_ID` downloads a Civitai file (token optional). Sizes with every feature: 8gb ~156 GB,
-  large ~234 GB. A tier's `optional_features` are downloaded only when named: the 8gb tier's `full_stage2` (the 8.9 GB
-  distilled LoRA that only FINAL runs of the full video model load; part of `video` in the large tier). The LTX-2.5 dev transformer and the LTX-2.3 union LoRA serve only video-to-video and the (off) pose
-  guide. The SAM 2 node reads only <ComfyUI>/models/sam2 and, at fp16, only `sam2.1_hiera_large-fp16.safetensors`.
+- Model tiers (`setup/models.json`, `models download --tier 8gb|large`): files are pinned by revision, size and SHA-256.
+  New video runs use LTX-2.5 distilled INT8; both tiers prefer INT8 Qwen editing and LTX text weights. Some models use
+  FP8, BF16 or GGUF when no INT8 is configured. `8gb` is tested on RTX 3070 + 32 GB RAM; `large` uses larger VAE
+  decode tiles and ACE-Step XL. Sizes with every feature: 8gb ~134 GB, large ~144 GB. The LTX-2.3 union LoRA remains
+  for video-to-video and the optional pose guide; the full/dev LTX transformer and its stage-2 LoRA are not downloaded.
 - RunPod GPU (docs/large_gpu_speed_research.md): RTX PRO 6000 96 GB (best price per clip), H100 SXM (~6% faster, 60%
   more per hour). Not A100 (no fp8; int8 is slow there), not 4090/5090 pods (35-41 GB RAM). Do not add `--highvram` or
   `--gpu-only` (they turn off dynamic VRAM). int8 vs bf16 on the large tier: blind A/B in the first pod session.
@@ -1077,13 +1059,8 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
 ## 11. Development
 
 - Tests: `.venv/Scripts/python.exe -m pytest -q` (no GPU, no Blender). Keep the JSON CLI contract stable.
-- Distilled and full (dev) graphs are a pair (cinestudio/model_pairs.py PAIRS): change both through the generator
-  (setup/make_layout_graphs.py, make_redraw_graphs.py, make_txt2img_graphs.py); register every run-time clip-graph
-  change in runner.py (`@graph_feature` on its helper, `_pairs.register` for a bound value; a model-specific one with
-  `only=` and a reason);
-  tests/unit/test_model_parity.py fails on drift and on unregistered changes. A node only the full member has must be
-  a model pass-through listed in model_pairs.FULL_ONLY_NODES (today `lora_dist`, the stage-2 distilled LoRA): links
-  through it compare as links to its model input.
+- LTX-2.5 dev graphs are historical references; new video work uses the distilled profile only.
+
 - Retired graphs live in .cinestudio/backup/workflows_retired_<date>/ (with the setup scripts that made them); a later
   release can add a formal retire/preserve step.
 - Commit only when the user asks.

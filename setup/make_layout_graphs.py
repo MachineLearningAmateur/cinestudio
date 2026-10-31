@@ -1,10 +1,9 @@
-"""LTX-2.5 Layout-To-Render graphs of BOTH models: workflows/ltx25dev_layout[ing] (full) and ltx25_layout[ing] (distilled).
+"""Build the supported LTX-2.5 distilled Layout-To-Render graphs.
 
     python setup/make_layout_graphs.py
 
-The single source of these four graphs and their bind maps: edit this script, never the files.
-tests/unit/test_model_parity.py checks that it reproduces workflows/ and that the pair differs only where the model needs
-it (cinestudio/model_pairs.py).
+The default build reads only the distilled video-to-video graph and writes two graphs and their bind maps. Historical
+dev graphs remain available to tests that examine old runs; they are not needed to build the supported graphs.
 
 Lightricks' recipe (model card of Lightricks/LTX-2.5-22b-IC-LoRA-Layout-To-Render and its ComfyUI graph
 LTX-2.5_ICLoRA_Layout_To_Render_Two_Stage_Distilled.json): the layout IC-LoRA at 1.0; the LAYOUT video (a clay or
@@ -13,7 +12,10 @@ blocking render from Blender: the camera, the motion, where things stand) as an 
 guide at frame -1 (outside the clip, attention only); both guides again in stage 2 (x2 upscale + refine); the guides
 are cropped before decoding. Width and height must divide by 64; frames 8k+1.
 
-What we keep from our graphs (ltx25dev_v2v): stage 1 of the FULL (dev) model with MultimodalGuider + GuiderParameters
+The default takes the distilled video-to-video graph as its base; layouting adds Ingredients guidance. The following
+full-model recipe describes historical graphs only, which remain available for comparison with old runs.
+
+What historical graphs kept from ltx25dev_v2v: stage 1 of the FULL (dev) model with MultimodalGuider + GuiderParameters
 (CFG rescale 0.7, STG block 28) and the 30-step dev schedule (bound `sigmas`, from runner.dev_sigmas), audio.
 `layouting` adds the Ingredients IC-LoRA (2.5) with the character sheet held on every frame, as in ltx25dev_v2v.
 
@@ -30,9 +32,9 @@ import json
 from pathlib import Path
 
 W = Path(__file__).resolve().parent.parent / "workflows"
-BASE = "ltx25dev_v2v"
+BASE = "ltx25_v2v"
 LAYOUT_LORA = "ltx-2.5-22b-ic-lora-layout-to-render-1.0.safetensors"
-DISTILLED_LORA = "ltx-2.5-22b-distilled-lora-450-bf16.safetensors"   # setup/models.json slot ltx25_distilled_lora
+DISTILLED_LORA = "ltx-2.5-22b-distilled-lora-450-bf16.safetensors"   # historical full-model stage 2 only
 STAGE2_SIGMAS = "0.909375, 0.725, 0.421875, 0.0"      # ltx-pipelines STAGE_2_DISTILLED_SIGMA_VALUES (both models)
 STAGE2_LORA_STRENGTH = 1.0
 KEEP = ("ckpt", "vvae", "audio_vae", "te", "pos", "neg", "cond", "alat", "noise1", "sampler1", "sigmas1", "gpv1", "gpa1",
@@ -142,7 +144,7 @@ def build(ingredients: bool, base_name: str = BASE) -> tuple[dict, dict]:
     if not distilled:
         models["ltx25_distilled_lora"] = [["lora_dist", "lora_name"]]
         inputs["stage2_lora_strength"] = [["lora_dist", "strength_model"]]
-    b = {"_about": "LTX-2.5 full model, Layout-To-Render IC-LoRA (setup/make_layout_graphs.py): the Blender render as the "
+    b = {"_about": ("LTX-2.5 distilled model, " if distilled else "LTX-2.5 full model, ") + "Layout-To-Render IC-LoRA (setup/make_layout_graphs.py): the Blender render as the "
                    "layout guide + a look image at frame -1" + (" + the Ingredients sheet" if ingredients else ""),
          "profile": base_name.split("_")[0], "capabilities": {**bb.get("capabilities", {}), "layout": True}, "inputs": inputs,
          "models": models, "outputs": bb["outputs"],
@@ -160,10 +162,10 @@ def build(ingredients: bool, base_name: str = BASE) -> tuple[dict, dict]:
 
 
 if __name__ == "__main__":
-    for base_name in ("ltx25dev_v2v", "ltx25_v2v"):
+    for base_name in ("ltx25_v2v",):
         prof = base_name.split("_")[0]
         for name, ing in (("layout", False), ("layouting", True)):
             g, b = build(ing, base_name)
             (W / f"{prof}_{name}_api.json").write_text(json.dumps(g, indent=1), encoding="utf-8")
             (W / f"{prof}_{name}.bind.json").write_text(json.dumps(b, indent=1), encoding="utf-8")
-    print("ok 4")
+    print("ok 2")

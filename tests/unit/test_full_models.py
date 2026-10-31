@@ -11,8 +11,18 @@ DEV_VARIANTS = ("ref", "refup", "restyle", "v2v", "v2vref")
 
 
 def test_the_app_uses_the_full_graphs():
-    assert recipe.FULL and runner.PROFILE == "ltx25dev"
+    assert recipe.FULL and runner.PROFILE == "ltx25"
+    assert "ltx25dev" in recipe.RETIRED_PROFILES
     assert recipe.ZIMAGE_VARIANT == "base" and recipe.ACE_VARIANT == "base" and not recipe.FAST_EDITS
+
+
+@pytest.mark.parametrize("tier", ["8gb", "large"])
+@pytest.mark.parametrize("variant", ["layout", "layouting", "v2v", "v2vref", "ref", "refup", "restyle", "redraw", "txt2img"])
+def test_supported_ltx_workflows_load_the_distilled_int8_model(tier, variant):
+    wf = ProfileWorkflow("ltx25", variant, models=models.bundle(tier), use_copy=False)
+    files = [n["inputs"]["unet_name"] for n in wf.graph.values()
+             if "unet_name" in n.get("inputs", {}) and "ltx-2.5" in n["inputs"]["unet_name"]]
+    assert files and all("distilled" in name and "int8" in name for name in files)
 
 
 @pytest.mark.parametrize("profile", ["ltx25dev"])
@@ -26,8 +36,7 @@ def test_dev_graphs_have_no_distilled_parts(variant, profile):
     assert guiders and all(n["class_type"] == "MultimodalGuider" for n in guiders)      # with CFG rescale
     params = [n["inputs"] for n in wf.graph.values() if n["class_type"] == "GuiderParameters"]
     assert params and all(p["cfg"] > 1 and p["rescale"] == 0.7 for p in params)        # cfg > 1, rescaled
-    for slot, targets in wf.bind["models"].items():
-        assert slot in models.bundle("8gb") and slot in models.bundle("large")
+    assert "ltx25_model" not in models.bundle("8gb")  # legacy graphs are not downloaded or run
 
 
 @pytest.mark.parametrize("profile,variant", [("zimage", "base"), ("acestep", "base"), ("qwenedit", "edit"),
@@ -41,11 +50,11 @@ def test_image_and_music_graphs_take_the_tier(profile, variant):
         assert not any("turbo" in u or "distilled" in u for u in used)
 
 
-def test_family_key_changes_with_the_model_files():
-    a = ProfileWorkflow("ltx25dev", "v2v", models=models.bundle("8gb")).family_key()
-    b = ProfileWorkflow("ltx25dev", "v2v", models=models.bundle("large")).family_key()
-    assert a.startswith("ltx25@") and b.startswith("ltx25@") and a != b
-    assert a == ProfileWorkflow("ltx25dev", "v2vref", models=models.bundle("8gb")).family_key()   # same files
+def test_distilled_family_key_is_shared_across_tiers():
+    a = ProfileWorkflow("ltx25", "v2v", models=models.bundle("8gb")).family_key()
+    b = ProfileWorkflow("ltx25", "v2v", models=models.bundle("large")).family_key()
+    assert a.startswith("ltx25@") and a == b
+    assert a == ProfileWorkflow("ltx25", "v2vref", models=models.bundle("8gb")).family_key()
 
 
 def test_dev_schedule_matches_ltxvscheduler_and_keeps_the_start():

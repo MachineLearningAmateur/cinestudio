@@ -433,7 +433,7 @@ def _parser() -> JsonArgumentParser:
         if name != "stop":
             x.add_argument("--feature", action="append", default=None,
                            help="only the files of a feature: video, character, music, select, pose, background, "
-                                "mocap, full_stage2 (the full video model's stage-2 LoRA: optional in the 8gb tier) "
+                                "mocap "
                                 "(repeatable)")
         if name == "download":
             x.add_argument("--detach", action="store_true", help="run in the background (the app shows the progress)")
@@ -490,7 +490,7 @@ def _parser() -> JsonArgumentParser:
     bs.add_argument("--style-lora", required=True)
     bs.add_argument("--keep", type=float, default=0.5, help="about this part of the panorama's structure stays (0..1; "
                     "the start noise is 1 - keep)")
-    bs.add_argument("--profile", default=None, help="the LTX graphs (default the distilled LTX-2.5)")
+    bs.add_argument("--profile", choices=("ltx25",), default=None, help="the LTX graphs (default the distilled LTX-2.5)")
     bs.add_argument("--strength", type=float, default=0.8, help="the LoRA strength")
     bs.add_argument("--style", default="", help="style words (for example the LoRA's trigger word and look)")
     bs.add_argument("--seed", type=int, default=333)
@@ -683,7 +683,7 @@ def _parser() -> JsonArgumentParser:
     x.add_argument("--subject", default=None, help="what the pictures show (default: a young woman in a hooded jacket "
                                                    "standing in a city street, full body)")
     x.add_argument("--seeds", default=None, help="comma-separated seeds, one candidate each (default 202,303,404,505)")
-    x.add_argument("--video-model", choices=("distilled", "full"), default=None,
+    x.add_argument("--video-model", choices=("distilled",), default=None,
                    help="the LTX-2.5 model (default distilled, the model of the layout videos)")
     x.add_argument("--ref", default=None, help=argparse.SUPPRESS)          # the app's queue ticket (sref-...)
     x = sy.add_parser("use-reference", help="make a picture the style's reference (instant); Qwen conversions get its "
@@ -971,16 +971,12 @@ def _parser() -> JsonArgumentParser:
                    "puts it into the look image (the grey Blender room -> the scene) and the keyframe looks are off")
     n.add_argument("--look-text", default=None, help="layout: the character's words in the look instruction instead of "
                    "its saved description (when the description and the sheet disagree)")
-    n.add_argument("--video-model", choices=("distilled", "full"), default=None,
-                   help="layout runs: distilled (default; LTX-2.5 distilled, 8 steps, CFG 1) or full (the dev model: "
-                        "30 steps with guidance and the negative; about 8x slower in preview, 5x at final (estimate); "
-                        "not yet A/B-tested; needs the dev transformer: models download --feature video); "
-                        "--steps/--guidance apply to full")
-    n.add_argument("--profile", choices=("ltx25dev", "ltx25"), default=None,
-                   help="the video model: ltx25 = LTX-2.5 distilled (8 steps; the default of layout runs, a Blender "
-                        "shot with a library character), ltx25dev = LTX-2.5 full (the default of video-to-video runs)")
-    n.add_argument("--steps", type=int, default=None, help="full model: sampling steps of stage 1 (8..60; default 30)")
-    n.add_argument("--guidance", type=float, default=None, help="full model: the video CFG (1..10; default 3)")
+    n.add_argument("--video-model", choices=("distilled",), default=None,
+                   help="LTX-2.5 distilled INT8 (the supported video model)")
+    n.add_argument("--profile", choices=("ltx25",), default=None,
+                   help="LTX-2.5 distilled profile (ltx25)")
+    n.add_argument("--steps", type=int, default=None, help=argparse.SUPPRESS)
+    n.add_argument("--guidance", type=float, default=None, help=argparse.SUPPRESS)
     n.add_argument("--note", default=None, help="what this run tests (shown with its prompt in the app)")
     n.add_argument("--control-video", default=None, help="a control video to use instead of the skeleton drawn from "
                    "the rig (e.g. a pose detector's skeletons of several characters); fitted to the clip size")

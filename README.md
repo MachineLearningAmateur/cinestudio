@@ -57,10 +57,10 @@ python -m cinestudio models download --detach
 
 | Tier | Hardware | Model files |
 | --- | --- | --- |
-| `8gb` | 8 GB VRAM and 32 GB RAM; tested on an RTX 3070 | About 156 GB with every feature |
-| `large` | 80 GB+ VRAM and about 120 GB RAM | About 225 GB |
+| `8gb` | 8 GB VRAM and 32 GB RAM; tested on an RTX 3070 | About 134 GB with every feature |
+| `large` | 80 GB+ VRAM and about 120 GB RAM | About 144 GB |
 
-These sizes are for model files; allow additional space for the runtime and your generated work. The default Blender video workflow uses the distilled LTX-2.5 model in both tiers. The full model is used for video-to-video workflows. See [docs/MODELS.md](docs/MODELS.md) for model choices, downloads and licensing.
+These sizes are for model files; allow additional space for the runtime and your generated work. Both tiers use the distilled INT8 LTX-2.5 video model, including video-to-video workflows. INT8 is preferred where available; some supporting models use other formats. See [docs/MODELS.md](docs/MODELS.md) for model choices, downloads and licensing.
 
 A **Hugging Face token** with access to the gated LTX-2.5 files is required for a new install. A Comfy Cloud API key is optional and only needed for the paid cloud service; a Civitai API key is only needed for downloads that require it. Set or replace a token without putting its value on the command line:
 

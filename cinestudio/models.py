@@ -188,9 +188,7 @@ def path_of(entry: dict) -> Path:
 # ------------------------------------------------------------------ status
 
 def optional_features(tier: str) -> list[str]:
-    """The features that a tier downloads only when they are asked for by name (8gb: full_stage2, the 8.9 GB distilled
-    LoRA that only FINAL runs of the full video model use): left out of the tier's whole download, of its status and of
-    the other features that list the same slots (video)."""
+    """Features downloaded only when explicitly requested, rather than with a full tier download."""
     t = _tiers()
     tier = canon(tier)
     if tier not in t["tiers"]:

@@ -15,16 +15,14 @@ section 6, including a Qwen edit and a pod recreation, still need testing.
 ## 2. Create the pod (RunPod console or the RunPod plugin)
 
 - **Network volume** first, in the data center where the GPU is (the models live here and survive the pod). It mounts
-  at `/workspace`. Model sizes from setup/models.json: 8gb tier 155.6 GB (164.5 GB with the optional `full_stage2`),
-  large tier 233.3 GB. The runtime (ComfyUI venv with torch and the CUDA toolkit, Blender, the app venv) adds about
-  19 GiB on the first RTX PRO 6000 pod, and pip's cache can add several GB. Size: **8gb tier 200 GB, large
-  tier 300 GB** (about 25-50 GB left for the cinestudio home and runs).
+  at `/workspace`. Model sizes from setup/models.json: 8gb tier about 134.1 GB,
+  large tier about 144.0 GB. The runtime (ComfyUI venv with torch and the CUDA toolkit, Blender, the app venv) adds about
+  19 GiB on the first RTX PRO 6000 pod, and pip's cache can add several GB. Size: **200 GB for either tier** leaves roughly 35–45 GB for the cinestudio home and runs after the estimated runtime installation.
 - **Pod:** a stock RunPod PyTorch image for CUDA 13.0 on Ubuntu 24.04, e.g.
   `runpod/pytorch:1.4.2-rc.184-cu1300-torch2121-ubuntu2404` (2026-10-22; its torch 2.12.1 is the pinned one). The
   default `--cuda cu130` needs a host driver >= 580: choose CUDA 13.0 in RunPod's CUDA filter (the script stops on an
   older driver). The image has Python 3.12/3.13 with venv, ffmpeg, git and tmux. The volume attached, SSH on.
-- **GPU** for the large tier: 80 GB or more and about 120 GB of system RAM (the bf16 files: LTX + Gemma about 68 GB,
-  Qwen 41 GB; on a 48 GB card they stream from RAM, 3-4x slower). Recommended: RTX PRO 6000 96 GB (best price per
+- **GPU** for the large tier: 80 GB or more and about 120 GB of system RAM (large-tier sizing is an estimate; video and Qwen editing now use INT8 weights). Recommended: RTX PRO 6000 96 GB (best price per
   clip); H100 SXM 80 GB (about 6% faster, 60% more per hour). Not A100 (no fp8, slow int8), not 4090/5090 pods (35-41 GB
   RAM). docs/large_gpu_speed_research.md. The tier was called `24gb` before 2026-10-24; that name still works.
 - Record the image's exact tag in `setup/runtime.lock.json` -> `pod.image` after the first successful test.

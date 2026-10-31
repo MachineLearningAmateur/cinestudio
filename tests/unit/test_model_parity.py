@@ -27,6 +27,21 @@ FIX = ("Change both graphs through their generator, or declare a difference the 
        "cinestudio/model_pairs.py (CLASS_SWAPS, VALUE_DIFFS, FULL_ONLY_BINDS, the pair's full_only_classes) with a reason.")
 
 
+@pytest.fixture(scope="module", autouse=True)
+def legacy_graph_metadata():
+    """Exercise frozen historical dev graphs with synthetic metadata, without supporting their weights."""
+    from cinestudio import models
+    original = models.bundle
+    with pytest.MonkeyPatch.context() as patch:
+        def bundle(tier):
+            result = original(tier)
+            result["ltx25_model"] = {"dir": "diffusion_models", "file": "historical-dev.safetensors", "size": 1, "sha256": "0" * 64}
+            result["ltx25_distilled_lora"] = {"dir": "loras", "file": "ltx-2.5-22b-distilled-lora-450-bf16.safetensors", "size": 1, "sha256": "0" * 64}
+            return result
+        patch.setattr(models, "bundle", bundle)
+        yield
+
+
 # ------------------------------------------------------------------ the graph pairs
 
 @pytest.mark.parametrize("variant", sorted(mp.PAIRS))
