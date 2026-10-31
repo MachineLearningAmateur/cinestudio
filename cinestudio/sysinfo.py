@@ -78,6 +78,43 @@ def gpu() -> dict | None:
         return None
 
 
+class _GpuSampler:
+    """Keep driver calls off the web server; at most one daemon can be stuck in NVML."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._pending = None
+        self._sample = None
+        self._sampled_at = float("-inf")
+
+    def read(self) -> dict | None:
+        with self._lock:
+            if self._pending is None and time.monotonic() - self._sampled_at >= 1.0:
+                ready = self._pending = threading.Event()
+                threading.Thread(target=self._read, args=(ready,), daemon=True, name="gpu-meter").start()
+            ready = self._pending
+        if ready is not None:
+            ready.wait(0.05)                     # normal first reads finish quickly; driver failures must not block
+        with self._lock:
+            return self._sample if time.monotonic() - self._sampled_at < 5.0 else None
+
+    def _read(self, ready: threading.Event) -> None:
+        sample = None
+        try:
+            sample = gpu()
+        except Exception:  # noqa: BLE001 - meters are optional; a sampling failure must allow a later retry
+            pass
+        finally:
+            with self._lock:
+                self._sample = sample
+                self._sampled_at = time.monotonic()
+                self._pending = None
+            ready.set()
+
+
+_gpu_sampler = _GpuSampler()
+
+
 CGROUP_FILES = (   # (limit, usage, stat, inactive-file key): cgroup v2, then v1
     ("/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory.current", "/sys/fs/cgroup/memory.stat", "inactive_file"),
     ("/sys/fs/cgroup/memory/memory.limit_in_bytes", "/sys/fs/cgroup/memory/memory.usage_in_bytes",
@@ -121,9 +158,10 @@ def total_ram() -> int | None:
     return min(total, limit) if limit else total
 
 
-def snapshot() -> dict:
+def snapshot(*, background: bool = False) -> dict:
     """One reading. CPU % is measured since the last call (the first call after start reads 0)."""
-    out: dict = {"cpu": None, "ram_used": None, "ram_total": None, "gpu": gpu()}
+    out: dict = {"cpu": None, "ram_used": None, "ram_total": None,
+                 "gpu": _gpu_sampler.read() if background else gpu()}
     if psutil is not None:
         vm = psutil.virtual_memory()
         used, total = vm.total - vm.available, vm.total

@@ -285,9 +285,20 @@ async function loadSettings(quiet = false) {
 }
 
 async function loadGraphics(quiet = false) {
+  if (loadGraphics.pending) return;
   const body = $("#gpu-body");
   let d;
-  try { d = await api("/api/settings/gpu"); } catch (e) { if (!quiet) body.textContent = e.message; return; }
+  loadGraphics.pending = true;
+  try { d = await api("/api/settings/gpu", { signal: AbortSignal.timeout(15000) }); }
+  catch (e) {
+    if (!quiet || !loadGraphics.last) {
+      loadGraphics.last = null;
+      const message = ["TimeoutError", "AbortError"].includes(e.name) ? "Reading the apps took too long." : e.message;
+      body.innerHTML = `<p>${esc(message)}</p><button id="btn-gpu-retry">Try again</button>`;
+      $("#btn-gpu-retry").addEventListener("click", () => loadGraphics());
+    }
+    return;
+  } finally { loadGraphics.pending = false; }
   const sig = JSON.stringify(d);
   if (quiet && sig === loadGraphics.last) return;                 // nothing changed: keep the page as it is
   loadGraphics.last = sig;

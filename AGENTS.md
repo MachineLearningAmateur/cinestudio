@@ -1017,6 +1017,9 @@ assets go into the repo folders above; private results stay in .cinestudio (.git
   each changed file. The page and scripts are served with Cache-Control no-cache.
 - Do not test the live app with headless Edge `--virtual-time-budget` (it flooded the server); a plain screenshot is
   taken before the data arrives. Render a static copy of a dialog to check its layout.
+- GPU meters and setup use `sysinfo.snapshot(background=True)`: one daemon samples NVML, with a bounded wait and
+  stale readings hidden. A live stack trace (2026-10-30) found `nvmlShutdown()` stuck on the web server's main thread,
+  freezing even static pages and Graphics ("Reading the apps"). Never call the driver directly from an API handler.
 - Canceled runs, songs and templates are deleted on the next list, but never a run with a final.mp4.
 - **Workflows view (advanced mode, off by default; Settings > Advanced or Ctrl+Shift+G):** web/js/workflows.js +
   webapi/workflows.py draw the ComfyUI graphs. Every submit saves its exact graph: runs in <run>/work/graphs/<job>.json

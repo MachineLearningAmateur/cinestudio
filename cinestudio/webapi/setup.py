@@ -36,7 +36,7 @@ async def setup_status(request: web.Request):
             free = _sh.disk_usage(md).free if md and Path(md).exists() else None
         except OSError:
             pass
-        snap = sysinfo.snapshot()
+        snap = sysinfo.snapshot(background=True)
         g = snap.get("gpu") or {}
         vram = round((g.get("vram_total") or 0) / 1024 ** 3)
         ram = round((snap.get("ram_total") or 0) / 1024 ** 3)

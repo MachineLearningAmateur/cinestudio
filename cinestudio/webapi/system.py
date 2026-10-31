@@ -27,7 +27,7 @@ async def status(request: web.Request):
 @routes.get("/api/system")
 async def system(request: web.Request):
     """CPU, RAM, GPU, VRAM and GPU temperature of this PC, for the meters in the side rail."""
-    return _ok(sysinfo.snapshot())
+    return _ok(sysinfo.snapshot(background=True))
 
 
 @routes.get("/api/queue")

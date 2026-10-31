@@ -27,6 +27,44 @@ def call(fn):
     return asyncio.run(run())
 
 
+def test_stuck_gpu_meter_does_not_block_apps_or_page(home, monkeypatch):
+    import threading
+    import types
+    from cinestudio import sysinfo
+    from cinestudio.webapi import setup
+
+    release = threading.Event()
+    sampler = sysinfo._GpuSampler()
+    calls = []
+
+    def stuck_driver():
+        calls.append(1)
+        release.wait()
+        return None
+
+    monkeypatch.setattr(sysinfo, "gpu", stuck_driver)
+    monkeypatch.setattr(sysinfo, "_gpu_sampler", sampler)
+    monkeypatch.setattr(setup, "_gpu", lambda: types.SimpleNamespace(list_apps=lambda: {"apps": []}))
+
+    async def go(c):
+        for _ in range(3):
+            r = await asyncio.wait_for(c.get("/api/system"), timeout=2)
+            data = (await r.json())["data"]
+            assert data["gpu"] is None and "cpu" in data and "ram_total" in data
+        assert len(calls) == 1
+        r = await asyncio.wait_for(c.get("/api/settings/gpu"), timeout=2)
+        assert (await r.json())["data"]["apps"] == []
+        assert (await asyncio.wait_for(c.get("/"), timeout=2)).status == 200
+
+    try:
+        call(go)
+    finally:
+        pending = sampler._pending
+        release.set()
+        if pending is not None:
+            assert pending.wait(2)
+
+
 def test_characters_list_and_show(home):
     img = home / "sheet.png"
     cv2.imwrite(str(img), np.zeros((896, 1536, 3), np.uint8))
